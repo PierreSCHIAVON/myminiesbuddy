@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import Link from 'next/link'
 
 interface Tournament {
   id: string
@@ -15,83 +16,6 @@ interface Tournament {
   description: string
 }
 
-// Mock data - will be replaced with real data from API/database
-const mockTournaments: Tournament[] = [
-  {
-    id: '1',
-    name: "L'Alliance 40K - Avril 2026",
-    game: 'Warhammer 40K',
-    location: 'Fressain',
-    date: '2026-04-26',
-    currentPlayers: 17,
-    maxPlayers: 16,
-    description: 'Tournoi compétitif Warhammer 40K edition 10th. Swiss pairing, 3 rondes.',
-  },
-  {
-    id: '2',
-    name: 'Doublette 40K à Utopolys',
-    game: 'Warhammer 40K',
-    location: 'Mons En Baroeul',
-    date: '2026-04-26',
-    currentPlayers: 24,
-    maxPlayers: 24,
-    description: 'Tournoi en doublettes. Format amusant pour équipes de 2.',
-  },
-  {
-    id: '3',
-    name: 'Underground 13',
-    game: 'Warhammer Age of Sigmar',
-    location: 'Domérat',
-    date: '2026-04-26',
-    currentPlayers: 13,
-    maxPlayers: 24,
-    description: 'Tournoi Age of Sigmar 4ème edition. Ambiance narrative.',
-  },
-  {
-    id: '4',
-    name: 'Convention Bolt Action',
-    game: 'Bolt Action',
-    location: 'La Garde',
-    date: '2026-04-26',
-    currentPlayers: 8,
-    maxPlayers: 8,
-    description: 'WWII tabletop gaming convention. Multiple game systems.',
-  },
-  {
-    id: '5',
-    name: 'Clash of Charnay III',
-    game: 'Kings of War',
-    location: 'Charnay-Lès-Mâcon',
-    date: '2026-06-06',
-    currentPlayers: 8,
-    maxPlayers: 16,
-    description: 'Fantasy battle tournament. Kings of War 3rd edition.',
-  },
-  {
-    id: '6',
-    name: 'La boucherie',
-    game: 'Warhammer Age of Sigmar',
-    location: 'Ustaritz',
-    date: '2026-05-16',
-    currentPlayers: 0,
-    maxPlayers: 18,
-    description: 'AoS compétitif. Points de classement en jeu.',
-  },
-]
-
-const gamesList = [
-  'Warhammer 40K',
-  'Warhammer Age of Sigmar',
-  'Warhammer: The Old World',
-  'Bolt Action',
-  'Kings of War',
-  'Warmachine',
-  'Infinity',
-  'Blood Bowl',
-  'SAGA',
-  'Star Wars: Legion',
-]
-
 export default async function TournamentsPage({
   params,
   searchParams,
@@ -103,23 +27,41 @@ export default async function TournamentsPage({
   const { game: gameFilter, search: searchQuery } = await searchParams
   const t = await getTranslations({ locale, namespace: 'tournaments' })
 
-  // Filter tournaments based on search and game
-  let filtered = mockTournaments
-  if (gameFilter) {
-    filtered = filtered.filter((t) => t.game === gameFilter)
-  }
-  if (searchQuery) {
-    filtered = filtered.filter(
-      (t) =>
-        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.location.toLowerCase().includes(searchQuery.toLowerCase())
+  // Fetch games for filter dropdown
+  let gamesList: any[] = []
+  try {
+    const gamesResponse = await fetch(
+      `${process.env.AUTH_URL || 'http://localhost:3000'}/api/games`,
+      { cache: 'revalidate' }
     )
+    if (gamesResponse.ok) {
+      gamesList = await gamesResponse.json()
+    }
+  } catch (error) {
+    console.error('Error fetching games:', error)
+  }
+
+  // Fetch tournaments
+  let tournaments: Tournament[] = []
+  try {
+    const url = new URL(
+      `${process.env.AUTH_URL || 'http://localhost:3000'}/api/tournaments`
+    )
+    if (gameFilter) url.searchParams.append('game', gameFilter)
+    if (searchQuery) url.searchParams.append('search', searchQuery)
+
+    const response = await fetch(url.toString(), { cache: 'revalidate' })
+    if (response.ok) {
+      tournaments = await response.json()
+    }
+  } catch (error) {
+    console.error('Error fetching tournaments:', error)
   }
 
   // Separate upcoming and past tournaments
   const today = new Date()
-  const upcoming = filtered.filter((t) => new Date(t.date) >= today)
-  const past = filtered.filter((t) => new Date(t.date) < today)
+  const upcoming = tournaments.filter((t) => new Date(t.date) >= today)
+  const past = tournaments.filter((t) => new Date(t.date) < today)
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -143,15 +85,15 @@ export default async function TournamentsPage({
             defaultValue={searchQuery || ''}
           />
 
-          {/* Game Filter */}
+      {/* Game Filter */}
           <select
             className="px-4 py-2 bg-gray-900 border border-gray-700 rounded-md text-foreground hover:border-gray-600 transition-colors"
             defaultValue={gameFilter || ''}
           >
             <option value="">{t('filterByGame')}</option>
-            {gamesList.map((game) => (
-              <option key={game} value={game}>
-                {game}
+            {gamesList.map((game: any) => (
+              <option key={game.slug} value={game.slug}>
+                {game.name}
               </option>
             ))}
           </select>
@@ -169,14 +111,6 @@ export default async function TournamentsPage({
           {t('upcomingTournaments')} ({upcoming.length})
         </h2>
 
-        {upcoming.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-gray-400">
-              {t('noTournaments')}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
             {upcoming.map((tournament) => {
               const isFull = tournament.currentPlayers >= tournament.maxPlayers
               const spotsLeft = tournament.maxPlayers - tournament.currentPlayers
@@ -234,9 +168,11 @@ export default async function TournamentsPage({
 
                       {/* Actions */}
                       <div className="flex gap-2">
-                        <Button variant="outline">
-                          {t('viewDetails')}
-                        </Button>
+                        <Link href={`/${locale}/tournois/${tournament.id}`}>
+                          <Button variant="outline">
+                            {t('viewDetails')}
+                          </Button>
+                        </Link>
                         {!isFull && (
                           <Button className="bg-orange-600 hover:bg-orange-700">
                             {t('register')}
@@ -248,8 +184,6 @@ export default async function TournamentsPage({
                 </Card>
               )
             })}
-          </div>
-        )}
       </section>
 
       {/* Past Tournaments */}
