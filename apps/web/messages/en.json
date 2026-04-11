@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "tournaments": "Tournaments",
+    "games": "Games",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "dashboard": "Dashboard",
+    "profile": "My profile"
+  },
+  "home": {
+    "badge": "Open Beta — Join the forge",
+    "title": "The {highlight} platform for miniature wargamers",
+    "titleHighlight": "tournament",
+    "subtitle": "Organise, play, improve. WarForge centralises all your tournaments, rankings and army lists in one place.",
+    "cta": "Browse tournaments",
+    "ctaSecondary": "Discover games",
+    "featuresTitle": "Everything you need to play",
+    "features": {
+      "tournaments": {
+        "title": "Tournaments",
+        "desc": "Create or join tournaments. Automatic round and Swiss pairing management."
+      },
+      "rankings": {
+        "title": "Rankings",
+        "desc": "Track your progress, compare your stats, and climb the rankings by game and region."
+      },
+      "armies": {
+        "title": "Army lists",
+        "desc": "Import and share your lists. Analyse which factions dominate the tournament scene."
+      }
+    },
+    "ctaFinal": "Ready to launch your tournament?",
+    "ctaFinalDesc": "Join thousands of players using WarForge",
+    "ctaFinalBtn": "Get started now"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome {name}",
+    "myTournaments": "My tournaments",
+    "myTournamentsDesc": "Tournaments you organize or participate in",
+    "recentActivity": "Recent activity",
+    "upcomingTournaments": "Upcoming tournaments",
+    "statistics": "Statistics",
+    "wins": "Wins",
+    "losses": "Losses",
+    "ratio": "W/L Ratio",
+    "noTournaments": "No tournaments yet"
+  },
+  "profile": {
+    "title": "My profile",
+    "personalInfo": "Personal information",
+    "email": "Email",
+    "name": "Name",
+    "avatar": "Avatar",
+    "preferences": "Preferences",
+    "language": "Language",
+    "notifications": "Notifications",
+    "security": "Security",
+    "changePassword": "Change password",
+    "sessions": "Active sessions",
+    "logout": "Sign out",
+    "logoutAll": "Sign out from all devices"
+  }
+}

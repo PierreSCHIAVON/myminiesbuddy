@@ -2,7 +2,9 @@
   "extends": "@warforge/config/typescript/nextjs",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@auth/core": ["../../node_modules/@auth/core"],
+      "@auth/core/*": ["../../node_modules/@auth/core/*"]
     }
   },
   "include": [

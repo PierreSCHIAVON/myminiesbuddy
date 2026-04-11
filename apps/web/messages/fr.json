@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "tournaments": "Tournois",
+    "games": "Jeux",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "dashboard": "Dashboard",
+    "profile": "Mon profil"
+  },
+  "home": {
+    "badge": "Beta ouverte — Rejoins la forge",
+    "title": "La plateforme de {highlight} pour joueurs de figurines",
+    "titleHighlight": "tournois",
+    "subtitle": "Organise, joue, progresse. WarForge centralise tous tes tournois, classements et listes d'armées en un seul endroit.",
+    "cta": "Voir les tournois",
+    "ctaSecondary": "Découvrir les jeux",
+    "featuresTitle": "Tout ce qu'il faut pour jouer",
+    "features": {
+      "tournaments": {
+        "title": "Tournois",
+        "desc": "Crée ou rejoins des tournois. Gestion automatique des rondes et des appairages suisses."
+      },
+      "rankings": {
+        "title": "Classements",
+        "desc": "Suis ta progression, compare tes stats, et grimpe dans les classements par jeu et par région."
+      },
+      "armies": {
+        "title": "Listes d'armées",
+        "desc": "Importe et partage tes listes. Analyse les factions qui dominent les tournois."
+      }
+    },
+    "ctaFinal": "Prêt à lancer votre tournoi?",
+    "ctaFinalDesc": "Rejoignez des milliers de joueurs qui utilisent WarForge",
+    "ctaFinalBtn": "Commencer maintenant"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue {name}",
+    "myTournaments": "Mes tournois",
+    "myTournamentsDesc": "Tournois que tu organises ou auxquels tu participes",
+    "recentActivity": "Activité récente",
+    "upcomingTournaments": "Tournois à venir",
+    "statistics": "Statistiques",
+    "wins": "Victoires",
+    "losses": "Défaites",
+    "ratio": "Ratio W/L",
+    "noTournaments": "Aucun tournoi pour le moment"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "personalInfo": "Informations personnelles",
+    "email": "Email",
+    "name": "Nom",
+    "avatar": "Avatar",
+    "preferences": "Préférences",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "security": "Sécurité",
+    "changePassword": "Changer le mot de passe",
+    "sessions": "Sessions actives",
+    "logout": "Se déconnecter",
+    "logoutAll": "Déconnecter de tous les appareils"
+  }
+}
