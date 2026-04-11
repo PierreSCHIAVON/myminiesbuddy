@@ -60,5 +60,25 @@
     "sessions": "Active sessions",
     "logout": "Sign out",
     "logoutAll": "Sign out from all devices"
+  },
+  "tournaments": {
+    "title": "Tournaments",
+    "upcomingTournaments": "Upcoming tournaments",
+    "pastTournaments": "Past tournaments",
+    "noTournaments": "No tournaments found",
+    "filters": "Filters",
+    "filterByGame": "Filter by game",
+    "filterByDate": "Filter by date",
+    "searchPlaceholder": "Search for a tournament...",
+    "date": "Date",
+    "tournament": "Tournament",
+    "location": "Location",
+    "places": "Places",
+    "game": "Game",
+    "register": "Register",
+    "viewDetails": "View details",
+    "full": "Full",
+    "available": "Available",
+    "spotsAvailable": "{available} / {total} places"
   }
 }

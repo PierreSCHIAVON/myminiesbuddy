@@ -60,5 +60,25 @@
     "sessions": "Sessions actives",
     "logout": "Se déconnecter",
     "logoutAll": "Déconnecter de tous les appareils"
+  },
+  "tournaments": {
+    "title": "Tournois",
+    "upcomingTournaments": "Tournois à venir",
+    "pastTournaments": "Tournois passés",
+    "noTournaments": "Aucun tournoi trouvé",
+    "filters": "Filtres",
+    "filterByGame": "Filtrer par jeu",
+    "filterByDate": "Filtrer par date",
+    "searchPlaceholder": "Rechercher un tournoi...",
+    "date": "Date",
+    "tournament": "Tournoi",
+    "location": "Lieu",
+    "places": "Places",
+    "game": "Jeu",
+    "register": "S'inscrire",
+    "viewDetails": "Voir les détails",
+    "full": "Complet",
+    "available": "Disponible",
+    "spotsAvailable": "{available} / {total} places"
   }
 }
