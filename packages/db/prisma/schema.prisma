@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Le .env est lu depuis la racine du monorepo via turbo
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH (tables standard Auth.js)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+
+  organizedTournaments Tournament[]       @relation("Organizer")
+  participations       TournamentPlayer[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────
+// JEUX
+// ─────────────────────────────────────────────────────────────
+
+model Game {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique  // ex: "warhammer-40k", "age-of-sigmar"
+  description String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  tournaments Tournament[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOURNOIS
+// ─────────────────────────────────────────────────────────────
+
+model Tournament {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  slug        String           @unique
+  date        DateTime
+  location    String?
+  maxPlayers  Int              @default(16)
+  status      TournamentStatus @default(DRAFT)
+  format      TournamentFormat @default(SWISS)
+  pointsLimit Int?             // limite de points pour les listes d'armée
+
+  gameId      String
+  game        Game   @relation(fields: [gameId], references: [id])
+
+  organizerId String
+  organizer   User   @relation("Organizer", fields: [organizerId], references: [id])
+
+  players TournamentPlayer[]
+  rounds  Round[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum TournamentStatus {
+  DRAFT        // en préparation
+  OPEN         // inscriptions ouvertes
+  IN_PROGRESS  // en cours
+  COMPLETED    // terminé
+  CANCELLED    // annulé
+}
+
+enum TournamentFormat {
+  SWISS        // appairage suisse (le plus courant)
+  ROUND_ROBIN  // tout le monde joue contre tout le monde
+  ELIMINATION  // élimination directe
+}
+
+// ─────────────────────────────────────────────────────────────
+// JOUEURS INSCRITS
+// ─────────────────────────────────────────────────────────────
+
+model TournamentPlayer {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+
+  faction   String? // faction/armée jouée ex: "Space Marines"
+  listNotes String? // notes sur la liste
+
+  // Scores cumulés (mis à jour après chaque round)
+  wins   Int @default(0)
+  losses Int @default(0)
+  draws  Int @default(0)
+  points Int @default(0) // points de victoire
+  sos    Int @default(0) // Strength of Schedule (qualité des adversaires)
+
+  registeredAt DateTime @default(now())
+
+  matchesAsPlayer1 Match[] @relation("Player1")
+  matchesAsPlayer2 Match[] @relation("Player2")
+
+  @@unique([tournamentId, userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// RONDES ET MATCHS
+// ─────────────────────────────────────────────────────────────
+
+model Round {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  number       Int         // numéro de la ronde (1, 2, 3...)
+  status       RoundStatus @default(PENDING)
+
+  matches Match[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([tournamentId, number])
+}
+
+enum RoundStatus {
+  PENDING     // pas encore commencée
+  IN_PROGRESS // en cours
+  COMPLETED   // terminée
+}
+
+model Match {
+  id      String @id @default(cuid())
+  roundId String
+  round   Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  player1Id String
+  player1   TournamentPlayer  @relation("Player1", fields: [player1Id], references: [id])
+  player2Id String?           // null = BYE (nombre impair de joueurs)
+  player2   TournamentPlayer? @relation("Player2", fields: [player2Id], references: [id])
+
+  player1Score Int?
+  player2Score Int?
+  winnerId     String? // id du TournamentPlayer gagnant, null = draw
+
+  status MatchStatus @default(PENDING)
+
+  table Int?    // numéro de table physique
+  notes String? // notes arbitre
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MatchStatus {
+  PENDING     // pas encore joué
+  IN_PROGRESS // en cours
+  COMPLETED   // résultat saisi
+  BYE         // joueur exempt (adversaire absent ou nombre impair)
+}

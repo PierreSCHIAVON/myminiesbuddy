@@ -1,0 +1,11 @@
+{
+  "name": "@warforge/config",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./typescript": "./typescript.json",
+    "./typescript/nextjs": "./typescript.nextjs.json",
+    "./eslint/base": "./eslint.base.mjs",
+    "./eslint/nextjs": "./eslint.nextjs.mjs"
+  }
+}

@@ -1,0 +1,84 @@
+services:
+  # ── Base de données Warforge ──────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: warforge_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: warforge
+      POSTGRES_PASSWORD: warforge_dev
+      POSTGRES_DB: warforge_dev
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warforge -d warforge_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Base de données Keycloak (séparée) ───────────────────────
+  postgres_kc:
+    image: postgres:17-alpine
+    container_name: warforge_kc_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_dev
+      POSTGRES_DB: keycloak_dev
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_kc_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Keycloak SSO ─────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: warforge_keycloak_dev
+    restart: unless-stopped
+    command: start-dev --import-realm
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    environment:
+      # Admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Base de données
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres_kc:5432/keycloak_dev
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_dev
+      # URL de base (important pour les redirects OAuth)
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8090
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+    ports:
+      - "8090:8080"
+    depends_on:
+      postgres_kc:
+        condition: service_healthy
+
+  # ── pgAdmin (interface visuelle BDD) ─────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: warforge_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@warforge.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_dev_data:
+  postgres_kc_dev_data:
