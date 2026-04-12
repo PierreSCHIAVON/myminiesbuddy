@@ -1,20 +1,10 @@
 import { getTranslations } from 'next-intl/server'
-import { auth } from '@/auth'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-
-interface Tournament {
-  id: string
-  name: string
-  game: string
-  location: string
-  date: string
-  currentPlayers: number
-  maxPlayers: number
-  description: string
-}
+import { prisma } from '@warforge/db'
+import { TournamentListRegisterButton } from '@/components/tournament-list-register-button'
 
 export default async function TournamentsPage({
   params,
@@ -27,36 +17,39 @@ export default async function TournamentsPage({
   const { game: gameFilter, search: searchQuery } = await searchParams
   const t = await getTranslations({ locale, namespace: 'tournaments' })
 
-  // Fetch games for filter dropdown
-  let gamesList: any[] = []
+  let gamesList: { id: string; name: string; slug: string }[] = []
+  let rawTournaments: any[] = []
+
   try {
-    const gamesResponse = await fetch(
-      `${process.env.AUTH_URL || 'http://localhost:3000'}/api/games`,
-      { cache: 'revalidate' }
-    )
-    if (gamesResponse.ok) {
-      gamesList = await gamesResponse.json()
-    }
-  } catch (error) {
-    console.error('Error fetching games:', error)
+    const where: any = { status: 'OPEN' }
+    if (gameFilter) where.game = { slug: gameFilter }
+    if (searchQuery) where.OR = [
+      { name: { contains: searchQuery, mode: 'insensitive' } },
+      { location: { contains: searchQuery, mode: 'insensitive' } },
+    ]
+
+    ;[gamesList, rawTournaments] = await Promise.all([
+      prisma.game.findMany({ select: { id: true, name: true, slug: true }, orderBy: { name: 'asc' } }),
+      prisma.tournament.findMany({
+        where,
+        include: { game: true, _count: { select: { players: true } } },
+        orderBy: { date: 'asc' },
+      }),
+    ])
+  } catch {
+    // DB not available
   }
 
-  // Fetch tournaments
-  let tournaments: Tournament[] = []
-  try {
-    const url = new URL(
-      `${process.env.AUTH_URL || 'http://localhost:3000'}/api/tournaments`
-    )
-    if (gameFilter) url.searchParams.append('game', gameFilter)
-    if (searchQuery) url.searchParams.append('search', searchQuery)
-
-    const response = await fetch(url.toString(), { cache: 'revalidate' })
-    if (response.ok) {
-      tournaments = await response.json()
-    }
-  } catch (error) {
-    console.error('Error fetching tournaments:', error)
-  }
+  const tournaments = rawTournaments.map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    game: t.game.name,
+    location: t.location,
+    date: t.date.toISOString(),
+    currentPlayers: t._count.players,
+    maxPlayers: t.maxPlayers,
+    description: t.description,
+  }))
 
   // Separate upcoming and past tournaments
   const today = new Date()
@@ -77,32 +70,50 @@ export default async function TournamentsPage({
 
       {/* Search & Filters */}
       <section className="mb-8">
-        <div className="flex flex-col md:flex-row gap-4">
+        <form key={`${gameFilter ?? ''}-${searchQuery ?? ''}`} method="GET" className="flex flex-col md:flex-row md:items-center gap-4">
           {/* Search */}
           <Input
+            name="search"
             placeholder={t('searchPlaceholder')}
             className="flex-1 bg-gray-900 border-gray-700"
             defaultValue={searchQuery || ''}
           />
 
-      {/* Game Filter */}
+          {/* Game Filter */}
           <select
+            name="game"
             className="px-4 py-2 bg-gray-900 border border-gray-700 rounded-md text-foreground hover:border-gray-600 transition-colors"
             defaultValue={gameFilter || ''}
           >
             <option value="">{t('filterByGame')}</option>
-            {gamesList.map((game: any) => (
+            {gamesList.map((game) => (
               <option key={game.slug} value={game.slug}>
                 {game.name}
               </option>
             ))}
           </select>
 
-          {/* Create Tournament Button */}
-          <Button className="bg-orange-600 hover:bg-orange-700 whitespace-nowrap">
-            + {t('tournament')}
+          <Button type="submit" variant="outline" className="whitespace-nowrap">
+            {t('filterApply') || 'Filtrer'}
           </Button>
-        </div>
+
+          {(gameFilter || searchQuery) && (
+            <Link
+              href={`/${locale}/tournois`}
+              className="inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted whitespace-nowrap transition-colors"
+            >
+              ✕ {t('filterClear') || 'Effacer'}
+            </Link>
+          )}
+
+          {/* Create Tournament Button */}
+          <Link
+            href={`/${locale}/tournois/nouveau`}
+            className="inline-flex items-center justify-center rounded-lg bg-orange-600 hover:bg-orange-700 px-4 py-2 text-sm font-medium text-white whitespace-nowrap transition-colors"
+          >
+            + {t('createTournament')}
+          </Link>
+        </form>
       </section>
 
       {/* Upcoming Tournaments */}
@@ -174,9 +185,10 @@ export default async function TournamentsPage({
                           </Button>
                         </Link>
                         {!isFull && (
-                          <Button className="bg-orange-600 hover:bg-orange-700">
-                            {t('register')}
-                          </Button>
+                          <TournamentListRegisterButton
+                            tournamentId={tournament.id}
+                            label={t('register')}
+                          />
                         )}
                       </div>
                     </div>

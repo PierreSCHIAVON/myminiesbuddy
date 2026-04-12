@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,12 +26,16 @@ export default async function HomePage({
           {t('subtitle')}
         </p>
         <div className="flex gap-4 justify-center">
-          <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-            {t('cta')}
-          </Button>
-          <Button size="lg" variant="outline">
-            {t('ctaSecondary')}
-          </Button>
+          <Link href={`/${locale}/tournois`}>
+            <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+              {t('cta')}
+            </Button>
+          </Link>
+          <Link href={`/${locale}/jeux`}>
+            <Button size="lg" variant="outline">
+              {t('ctaSecondary')}
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -77,9 +82,11 @@ export default async function HomePage({
       <section className="text-center py-16 mt-16 border-t border-gray-800">
         <h2 className="text-3xl font-bold mb-4">{t('ctaFinal')}</h2>
         <p className="text-gray-400 mb-8">{t('ctaFinalDesc')}</p>
-        <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-          {t('ctaFinalBtn')}
-        </Button>
+        <Link href={`/${locale}/tournois`}>
+          <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+            {t('ctaFinalBtn')}
+          </Button>
+        </Link>
       </section>
     </div>
   )

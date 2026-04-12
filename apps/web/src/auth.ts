@@ -41,6 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Enrichit le JWT avec l'id interne et le rôle depuis notre BDD
     async jwt({ token, profile }) {
       if (profile?.sub) {
+        // Keycloak login — lookup by keycloakId
         try {
           const user = await prisma.user.findUnique({
             where: { keycloakId: profile.sub },
@@ -50,10 +51,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.userId = user.id
             token.role = user.role
           }
-        } catch (error) {
-          // Database not configured - use default role
+        } catch {
           token.userId = profile.sub
           token.role = 'user'
+        }
+      } else if (!token.userId && token.email) {
+        // Credentials login — lookup by email
+        try {
+          const user = await prisma.user.findFirst({
+            where: { email: token.email },
+            select: { id: true, role: true },
+          })
+          if (user) {
+            token.userId = user.id
+            token.role = user.role
+          }
+        } catch {
+          // DB not available
         }
       }
       return token

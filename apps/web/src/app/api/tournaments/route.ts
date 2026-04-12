@@ -1,5 +1,6 @@
 import { prisma } from '@warforge/db'
 import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
 
 export async function GET(request: Request) {
   try {
@@ -56,5 +57,64 @@ export async function GET(request: Request) {
       { error: 'Failed to fetch tournaments' },
       { status: 500 }
     )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { name, description, gameId, date, location, maxPlayers, format, pointsLimit } = body
+
+    if (!name || !gameId || !date) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Find organizer by email (works for both demo and Keycloak users)
+    const organizer = await prisma.user.findFirst({
+      where: { email: session.user.email! },
+    })
+    if (!organizer) {
+      return NextResponse.json(
+        { error: 'Organizer not found — please ensure your account is synced' },
+        { status: 404 }
+      )
+    }
+
+    // Generate unique slug from name
+    const base = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+    const slug = `${base}-${Date.now()}`
+
+    const tournament = await prisma.tournament.create({
+      data: {
+        name,
+        description: description || null,
+        slug,
+        date: new Date(date),
+        location: location || null,
+        maxPlayers: parseInt(maxPlayers) || 16,
+        format: format || 'SWISS',
+        pointsLimit: pointsLimit ? parseInt(pointsLimit) : null,
+        status: 'OPEN',
+        gameId,
+        organizerId: organizer.id,
+      },
+      include: { game: true },
+    })
+
+    return NextResponse.json(tournament, { status: 201 })
+  } catch (error) {
+    console.error('Error creating tournament:', error)
+    return NextResponse.json({ error: 'Failed to create tournament' }, { status: 500 })
   }
 }

@@ -40,15 +40,13 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
           <div className="flex items-center gap-3">
             {session?.user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={session.user.image ?? ''} alt={session.user.name ?? ''} />
-                      <AvatarFallback className="bg-orange-600 text-white text-sm font-semibold">
-                        {session.user.name?.[0]?.toUpperCase() ?? 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
+                <DropdownMenuTrigger className="relative h-9 w-9 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-600">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={session.user.image ?? ''} alt={session.user.name ?? ''} />
+                    <AvatarFallback className="bg-orange-600 text-white text-sm font-semibold">
+                      {session.user.name?.[0]?.toUpperCase() ?? 'U'}
+                    </AvatarFallback>
+                  </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <div className="px-2 py-1.5">
@@ -56,16 +54,16 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
                     <p className="text-xs text-muted-foreground">{session.user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${locale}/dashboard`}>{t('dashboard')}</Link>
+                  <DropdownMenuItem render={<Link href={`/${locale}/dashboard`} />}>
+                    {t('dashboard')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${locale}/profil`}>{t('profile')}</Link>
+                  <DropdownMenuItem render={<Link href={`/${locale}/profil`} />}>
+                    {t('profile')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <form action={async () => { 'use server'; await signOut({ redirectTo: `/${locale}` }) }}>
-                      <button className="w-full text-left text-destructive">
+                  <DropdownMenuItem variant="destructive">
+                    <form action={async () => { 'use server'; await signOut({ redirectTo: `/${locale}` }) }} className="w-full">
+                      <button type="submit" className="w-full text-left">
                         {t('signOut')}
                       </button>
                     </form>
@@ -73,8 +71,8 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <form action={async () => { 'use server'; await signIn('keycloak', { redirectTo: `/${locale}` }) }}>
-                <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
+              <form action={async () => { 'use server'; await signIn(undefined, { redirectTo: `/${locale}` }) }}>
+                <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700">
                   {t('signIn')}
                 </Button>
               </form>

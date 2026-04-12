@@ -38,14 +38,33 @@ enum UserRole {
 // ─────────────────────────────────────────────────────────────
 
 model Game {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique  // ex: "warhammer-40k", "age-of-sigmar"
-  description String?
-  imageUrl    String?
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique  // ex: "warhammer-40k", "age-of-sigmar"
+  abbreviation String?           // ex: "W40K", "WAoS", "BB"
+  description  String?
+  logoUrl      String?
+  createdAt    DateTime @default(now())
 
   tournaments Tournament[]
+  factions    Faction[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// FACTIONS (armées/équipes disponibles par jeu)
+// ─────────────────────────────────────────────────────────────
+
+model Faction {
+  id      String  @id @default(cuid())
+  name    String
+  slug    String
+  group   String? // ex: "Grand Alliance Chaos", "Imperium", "Xenos"
+  logoUrl String?
+
+  gameId  String
+  game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, slug])
 }
 
 // ─────────────────────────────────────────────────────────────

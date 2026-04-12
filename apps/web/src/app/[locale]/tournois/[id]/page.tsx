@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notFound } from 'next/navigation'
+import { RegisterButton } from '@/components/register-button'
 
 export default async function TournamentDetailPage({
   params,
@@ -120,9 +121,7 @@ export default async function TournamentDetailPage({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold mb-1">
-                    {isRegistered
-                      ? 'Vous êtes inscrit'
-                      : 'Vous pouvez vous inscrire'}
+                    {isRegistered ? 'Vous êtes inscrit' : 'Vous pouvez vous inscrire'}
                   </h3>
                   <p className="text-sm text-gray-400">
                     {isRegistered
@@ -130,16 +129,14 @@ export default async function TournamentDetailPage({
                       : 'Rejoignez ce tournoi dès maintenant'}
                   </p>
                 </div>
-                <Button
-                  className="bg-orange-600 hover:bg-orange-700"
-                  disabled={isFull || isRegistered}
-                >
-                  {isRegistered
-                    ? 'Inscrit'
-                    : isFull
-                      ? 'Complet'
-                      : t('register')}
-                </Button>
+                <RegisterButton
+                  tournamentId={tournament.id}
+                  isRegistered={isRegistered}
+                  isFull={isFull}
+                  registerLabel={t('register')}
+                  unregisterLabel={t('unregister')}
+                  fullLabel={t('full')}
+                />
               </div>
             </CardContent>
           </Card>

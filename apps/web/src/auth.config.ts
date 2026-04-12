@@ -14,14 +14,24 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        // Simple demo credentials
-        if (credentials?.email === 'demo@example.com' && credentials?.password === 'demo123') {
-          return {
-            id: '1',
+        const devAccounts: Record<string, { id: string; name: string; email: string; image: string }> = {
+          'demo@example.com': {
+            id: 'demo-001',
             name: 'Demo User',
             email: 'demo@example.com',
             image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
-          }
+          },
+          'organizer@example.com': {
+            id: 'test-organizer-001',
+            name: 'Tournament Master',
+            email: 'organizer@example.com',
+            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=organizer',
+          },
+        }
+        const email = credentials?.email as string
+        const password = credentials?.password as string
+        if (password === 'demo123' && devAccounts[email]) {
+          return devAccounts[email]
         }
         return null
       }
