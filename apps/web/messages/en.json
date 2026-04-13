@@ -84,6 +84,8 @@
     "full": "Full",
     "available": "Available",
     "spotsAvailable": "{available} / {total} places",
+    "spotsLeft": "spots left",
+    "noTournamentsFound": "No tournaments found",
     "createTournament": "Create a tournament",
     "createTitle": "Create a tournament",
     "createSubtitle": "Fill in your tournament details to open it for registrations."
@@ -113,6 +115,7 @@
     "statsWins": "W",
     "statsLosses": "L",
     "statsDraws": "D",
-    "statsWinRate": "Win rate"
+    "statsWinRate": "Win rate",
+    "seeTournaments": "See tournaments"
   }
 }

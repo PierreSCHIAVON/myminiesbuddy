@@ -84,6 +84,8 @@
     "full": "Complet",
     "available": "Disponible",
     "spotsAvailable": "{available} / {total} places",
+    "spotsLeft": "places restantes",
+    "noTournamentsFound": "Aucun tournoi trouvé",
     "createTournament": "Créer un tournoi",
     "createTitle": "Créer un tournoi",
     "createSubtitle": "Renseigne les informations de ton tournoi pour l'ouvrir aux inscriptions."
@@ -113,6 +115,7 @@
     "statsWins": "V",
     "statsLosses": "D",
     "statsDraws": "N",
-    "statsWinRate": "Taux de victoire"
+    "statsWinRate": "Taux de victoire",
+    "seeTournaments": "Voir les tournois"
   }
 }
