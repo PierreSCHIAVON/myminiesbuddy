@@ -12,7 +12,13 @@ export async function GET(
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: {
-        game: true,
+        game: {
+          include: {
+            factions: {
+              orderBy: [{ group: 'asc' }, { name: 'asc' }],
+            },
+          },
+        },
         organizer: {
           select: {
             id: true,
@@ -28,6 +34,9 @@ export async function GET(
                 name: true,
                 email: true,
               },
+            },
+            factionRef: {
+              select: { id: true, name: true },
             },
           },
         },

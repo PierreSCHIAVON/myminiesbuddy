@@ -104,6 +104,15 @@
     "activeTournaments": "active tournaments",
     "factionLabel": "factions",
     "noTournamentsForGame": "No open tournaments for this game yet.",
-    "organizeTournament": "Organise a tournament"
+    "organizeTournament": "Organise a tournament",
+    "statsTitle": "Faction Statistics",
+    "statsSubtitle": "Based on completed tournaments",
+    "statsFaction": "Faction",
+    "statsPlayers": "Players",
+    "statsMeta": "Meta %",
+    "statsWins": "W",
+    "statsLosses": "L",
+    "statsDraws": "D",
+    "statsWinRate": "Win rate"
   }
 }

@@ -16,6 +16,18 @@ export default async function GameDetailPage({
   const t = await getTranslations({ locale, namespace: 'games' })
   const tT = await getTranslations({ locale, namespace: 'tournaments' })
 
+  interface FactionStat {
+    factionId: string
+    factionName: string
+    group: string | null
+    players: number
+    wins: number
+    losses: number
+    draws: number
+    winRate: number
+    metaPct: number
+  }
+
   let game: {
     id: string
     name: string
@@ -38,6 +50,8 @@ export default async function GameDetailPage({
     }[]
   } | null = null
 
+  let factionStats: FactionStat[] = []
+
   try {
     game = await prisma.game.findUnique({
       where: { slug },
@@ -52,22 +66,75 @@ export default async function GameDetailPage({
         },
       },
     })
+
+    if (game) {
+      // Agrégation des stats par faction sur les tournois terminés
+      const raw = await prisma.tournamentPlayer.groupBy({
+        by: ['factionId'],
+        where: {
+          factionId: { not: null },
+          tournament: { gameId: game.id, status: 'COMPLETED' },
+        },
+        _count: { id: true },
+        _sum: { wins: true, losses: true, draws: true },
+      })
+
+      const totalPlayers = raw.reduce((s, r) => s + r._count.id, 0)
+
+      // Récupérer les noms des factions
+      const factionIds = raw.map((r) => r.factionId!).filter(Boolean)
+      const factionMap = factionIds.length
+        ? await prisma.faction.findMany({
+            where: { id: { in: factionIds } },
+            select: { id: true, name: true, group: true },
+          })
+        : []
+      const factionById = Object.fromEntries(factionMap.map((f) => [f.id, f]))
+
+      factionStats = raw
+        .map((r) => {
+          const faction = factionById[r.factionId!]
+          if (!faction) return null
+          const players = r._count.id
+          const wins = r._sum.wins ?? 0
+          const losses = r._sum.losses ?? 0
+          const draws = r._sum.draws ?? 0
+          const games = wins + losses + draws
+          return {
+            factionId: r.factionId!,
+            factionName: faction.name,
+            group: faction.group,
+            players,
+            wins,
+            losses,
+            draws,
+            winRate: games > 0 ? Math.round((wins / games) * 100) : 0,
+            metaPct: totalPlayers > 0 ? Math.round((players / totalPlayers) * 100) : 0,
+          } satisfies FactionStat
+        })
+        .filter(Boolean) as FactionStat[]
+
+      factionStats.sort((a, b) => b.winRate - a.winRate || b.players - a.players)
+    }
   } catch {
     // DB not available
   }
 
   if (!game) return notFound()
 
-  // Grouper les factions par groupe
-  const factionGroups = game.factions.reduce<Record<string, typeof game.factions>>(
-    (acc, faction) => {
-      const group = faction.group ?? t('otherFactions')
-      if (!acc[group]) acc[group] = []
-      acc[group].push(faction)
-      return acc
-    },
-    {}
-  )
+  // Fusionner toutes les factions avec leurs stats (TBD si pas de données)
+  const statsById = Object.fromEntries(factionStats.map((s) => [s.factionId, s]))
+  const allFactionRows = game.factions.map((f) => ({
+    faction: f,
+    stat: statsById[f.id] ?? null,
+  }))
+  // Factions avec stats en premier (triées par winRate), puis TBD
+  allFactionRows.sort((a, b) => {
+    if (a.stat && b.stat) return b.stat.winRate - a.stat.winRate || b.stat.players - a.stat.players
+    if (a.stat) return -1
+    if (b.stat) return 1
+    return a.faction.name.localeCompare(b.faction.name)
+  })
 
   const today = new Date()
   const upcoming = game.tournaments.filter((t) => t.date >= today)
@@ -149,47 +216,80 @@ export default async function GameDetailPage({
         </div>
       </section>
 
-      {/* Factions */}
-      {game.factions.length > 0 && (
+      {/* Factions & Stats */}
+      {allFactionRows.length > 0 && (
         <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">{t('factionsTitle')}</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('statsTitle')}</h2>
+          <p className="text-sm text-gray-500 mb-6">{t('statsSubtitle')}</p>
 
-          {Object.keys(factionGroups).length === 1 && !game.factions[0]?.group ? (
-            // Pas de groupes — grille simple
-            <div className="flex flex-wrap gap-2">
-              {game.factions.map((faction) => (
-                <span
-                  key={faction.id}
-                  className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-sm text-gray-300 hover:border-orange-600/50 hover:text-orange-400 transition-colors cursor-default"
-                >
-                  {faction.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            // Groupes multiples — sections avec titre
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(factionGroups).map(([group, factions]) => (
-                <div key={group}>
-                  <h3 className="text-sm font-semibold text-orange-500 uppercase tracking-wider mb-3">
-                    {group}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {factions.map((faction) => (
-                      <span
-                        key={faction.id}
-                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-sm text-gray-300 hover:border-orange-600/50 hover:text-orange-400 transition-colors cursor-default"
-                      >
-                        {faction.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-gray-900/60">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-400">#</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-400">{t('statsFaction')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsPlayers')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsMeta')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsWins')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsLosses')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsDraws')}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-400">{t('statsWinRate')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allFactionRows.map(({ faction, stat }, idx) => (
+                  <tr
+                    key={faction.id}
+                    className="border-b border-border/50 hover:bg-gray-900/40 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-500 font-mono">{stat ? idx + 1 : '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-semibold">{faction.name}</div>
+                      {faction.group && (
+                        <div className="text-xs text-gray-500">{faction.group}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-300">{stat ? stat.players : <span className="text-gray-600">—</span>}</td>
+                    <td className="px-4 py-3 text-center">
+                      {stat
+                        ? <span className="text-orange-400 font-semibold">{stat.metaPct}%</span>
+                        : <span className="text-gray-600">—</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 text-center text-green-400">{stat ? stat.wins : <span className="text-gray-600">—</span>}</td>
+                    <td className="px-4 py-3 text-center text-red-400">{stat ? stat.losses : <span className="text-gray-600">—</span>}</td>
+                    <td className="px-4 py-3 text-center text-gray-400">{stat ? stat.draws : <span className="text-gray-600">—</span>}</td>
+                    <td className="px-4 py-3 text-right">
+                      {stat ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-orange-500 rounded-full"
+                              style={{ width: `${stat.winRate}%` }}
+                            />
+                          </div>
+                          <span
+                            className={`font-bold tabular-nums w-12 text-right ${
+                              stat.winRate >= 60
+                                ? 'text-green-400'
+                                : stat.winRate >= 40
+                                ? 'text-orange-400'
+                                : 'text-red-400'
+                            }`}
+                          >{stat.winRate}%</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-600 text-xs font-mono">TBD</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
+
 
       {/* Upcoming Tournaments */}
       <section className="mb-12">
@@ -290,6 +390,7 @@ export default async function GameDetailPage({
                           {!isFull && (
                             <TournamentListRegisterButton
                               tournamentId={tournament.id}
+                              factions={game.factions}
                               label={tT('register')}
                             />
                           )}

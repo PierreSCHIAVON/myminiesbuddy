@@ -2461,7 +2461,103 @@ async function main() {
       },
     });
 
-    console.log("✅ Created 4 test tournaments");
+    // ── Tournoi terminé avec stats ────────────────────────────────
+    const lastMonth = new Date();
+    lastMonth.setDate(lastMonth.getDate() - 30);
+
+    const completedTournament = await prisma.tournament.create({
+      data: {
+        name: "Paris W40K Open — Hiver 2026",
+        slug: "paris-w40k-open-hiver-2026",
+        description: "Tournoi Warhammer 40K hivernal — 3 rondes suisses, 2000 pts. Résultats archivés.",
+        date: lastMonth,
+        location: "Paris, Espace Champerret",
+        maxPlayers: 8,
+        status: "COMPLETED",
+        format: "SWISS",
+        pointsLimit: 2000,
+        gameId: w40k.id,
+        organizerId: organizer.id,
+      },
+    });
+
+    // Joueurs de test
+    const testPlayers = await Promise.all([
+      prisma.user.upsert({ where: { email: "joueur1@test.com" }, update: {}, create: { keycloakId: "test-k-1", email: "joueur1@test.com", name: "Jean Dupont", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur2@test.com" }, update: {}, create: { keycloakId: "test-k-2", email: "joueur2@test.com", name: "Marie Martin", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur3@test.com" }, update: {}, create: { keycloakId: "test-k-3", email: "joueur3@test.com", name: "Pierre Bernard", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur4@test.com" }, update: {}, create: { keycloakId: "test-k-4", email: "joueur4@test.com", name: "Sophie Leroy", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur5@test.com" }, update: {}, create: { keycloakId: "test-k-5", email: "joueur5@test.com", name: "Lucas Moreau", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur6@test.com" }, update: {}, create: { keycloakId: "test-k-6", email: "joueur6@test.com", name: "Emma Petit", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur7@test.com" }, update: {}, create: { keycloakId: "test-k-7", email: "joueur7@test.com", name: "Thomas Roux", role: "PLAYER" } }),
+      prisma.user.upsert({ where: { email: "joueur8@test.com" }, update: {}, create: { keycloakId: "test-k-8", email: "joueur8@test.com", name: "Camille Girard", role: "PLAYER" } }),
+    ]);
+
+    // Factions W40K
+    const factionSlugs = ["space-marines", "necrons", "aeldari", "chaos-space-marines", "death-guard", "orks", "tau-empire", "tyranids"];
+    const factions40k = await Promise.all(
+      factionSlugs.map((slug) => prisma.faction.findFirst({ where: { slug, gameId: w40k.id } }))
+    );
+
+    // Stats finales prévues : SM 3W, Necrons 2W1D, Aeldari 1W1D1L, CSM 2W1L, DG 2W1L, Orks 1W2L, Tau 1W2L, Tyranids 0W3L
+    const statsMap: Record<string, { wins: number; losses: number; draws: number; points: number }> = {
+      "space-marines":       { wins: 3, losses: 0, draws: 0, points: 9 },
+      "necrons":             { wins: 2, losses: 0, draws: 1, points: 7 },
+      "aeldari":             { wins: 1, losses: 1, draws: 1, points: 4 },
+      "chaos-space-marines": { wins: 2, losses: 1, draws: 0, points: 6 },
+      "death-guard":         { wins: 2, losses: 1, draws: 0, points: 6 },
+      "orks":                { wins: 1, losses: 2, draws: 0, points: 3 },
+      "tau-empire":          { wins: 1, losses: 2, draws: 0, points: 3 },
+      "tyranids":            { wins: 0, losses: 3, draws: 0, points: 0 },
+    };
+
+    const registrations = await Promise.all(
+      testPlayers.map((player, i) => {
+        const slug = factionSlugs[i];
+        const faction = factions40k[i];
+        const stats = statsMap[slug!] ?? { wins: 0, losses: 0, draws: 0, points: 0 };
+        return prisma.tournamentPlayer.create({
+          data: {
+            tournamentId: completedTournament.id,
+            userId: player.id,
+            factionId: faction?.id ?? null,
+            wins: stats.wins,
+            losses: stats.losses,
+            draws: stats.draws,
+            points: stats.points,
+          },
+        });
+      })
+    );
+
+    // Rondes et matchs (3 rondes × 4 matchs)
+    const [p0, p1, p2, p3, p4, p5, p6, p7] = registrations; // SM, Necr, Eld, CSM, DG, Orks, Tau, Tyra
+
+    const round1 = await prisma.round.create({ data: { tournamentId: completedTournament.id, number: 1, status: "COMPLETED" } });
+    await Promise.all([
+      prisma.match.create({ data: { roundId: round1.id, player1Id: p0.id, player2Id: p7.id, player1Score: 80, player2Score: 20, winnerId: p0.id, status: "COMPLETED" } }), // SM bat Tyra
+      prisma.match.create({ data: { roundId: round1.id, player1Id: p1.id, player2Id: p5.id, player1Score: 70, player2Score: 40, winnerId: p1.id, status: "COMPLETED" } }), // Necr bat Orks
+      prisma.match.create({ data: { roundId: round1.id, player1Id: p3.id, player2Id: p6.id, player1Score: 60, player2Score: 50, winnerId: p3.id, status: "COMPLETED" } }), // CSM bat Tau
+      prisma.match.create({ data: { roundId: round1.id, player1Id: p4.id, player2Id: p2.id, player1Score: 55, player2Score: 55, winnerId: null,   status: "COMPLETED" } }), // DG = Eld (nul)
+    ]);
+
+    const round2 = await prisma.round.create({ data: { tournamentId: completedTournament.id, number: 2, status: "COMPLETED" } });
+    await Promise.all([
+      prisma.match.create({ data: { roundId: round2.id, player1Id: p0.id, player2Id: p3.id, player1Score: 75, player2Score: 35, winnerId: p0.id, status: "COMPLETED" } }), // SM bat CSM
+      prisma.match.create({ data: { roundId: round2.id, player1Id: p1.id, player2Id: p2.id, player1Score: 60, player2Score: 60, winnerId: null,   status: "COMPLETED" } }), // Necr = Eld (nul)
+      prisma.match.create({ data: { roundId: round2.id, player1Id: p4.id, player2Id: p6.id, player1Score: 65, player2Score: 45, winnerId: p4.id, status: "COMPLETED" } }), // DG bat Tau
+      prisma.match.create({ data: { roundId: round2.id, player1Id: p7.id, player2Id: p5.id, player1Score: 30, player2Score: 60, winnerId: p5.id, status: "COMPLETED" } }), // Orks bat Tyra
+    ]);
+
+    const round3 = await prisma.round.create({ data: { tournamentId: completedTournament.id, number: 3, status: "COMPLETED" } });
+    await Promise.all([
+      prisma.match.create({ data: { roundId: round3.id, player1Id: p0.id, player2Id: p1.id, player1Score: 80, player2Score: 50, winnerId: p0.id, status: "COMPLETED" } }), // SM bat Necr
+      prisma.match.create({ data: { roundId: round3.id, player1Id: p4.id, player2Id: p3.id, player1Score: 70, player2Score: 40, winnerId: p4.id, status: "COMPLETED" } }), // DG bat CSM
+      prisma.match.create({ data: { roundId: round3.id, player1Id: p2.id, player2Id: p6.id, player1Score: 65, player2Score: 50, winnerId: p2.id, status: "COMPLETED" } }), // Eld bat Tau
+      prisma.match.create({ data: { roundId: round3.id, player1Id: p5.id, player2Id: p7.id, player1Score: 55, player2Score: 25, winnerId: p5.id, status: "COMPLETED" } }), // Orks bat Tyra
+    ]);
+
+    console.log("✅ Created 5 test tournaments (incl. 1 completed with match results)");
   }
 
   console.log("🎉 Database seeding complete!");

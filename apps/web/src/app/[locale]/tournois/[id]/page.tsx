@@ -133,6 +133,7 @@ export default async function TournamentDetailPage({
                   tournamentId={tournament.id}
                   isRegistered={isRegistered}
                   isFull={isFull}
+                  factions={tournament.game.factions ?? []}
                   registerLabel={t('register')}
                   unregisterLabel={t('unregister')}
                   fullLabel={t('full')}
@@ -178,8 +179,8 @@ export default async function TournamentDetailPage({
                     </span>
                     <div className="flex-1">
                       <p className="font-semibold">{player.user.name}</p>
-                      {player.faction && (
-                        <p className="text-sm text-gray-400">{player.faction}</p>
+                      {player.factionRef?.name && (
+                        <p className="text-sm text-gray-400">{player.factionRef.name}</p>
                       )}
                     </div>
                     <div className="text-right text-sm text-gray-400">

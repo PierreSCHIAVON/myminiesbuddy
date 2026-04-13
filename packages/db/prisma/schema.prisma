@@ -64,6 +64,8 @@ model Faction {
   gameId  String
   game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
+  players TournamentPlayer[]
+
   @@unique([gameId, slug])
 }
 
@@ -121,7 +123,8 @@ model TournamentPlayer {
   userId       String
   user         User       @relation(fields: [userId], references: [id])
 
-  faction   String? // faction/armée jouée ex: "Space Marines"
+  factionId String? // FK vers Faction (null si jeu sans factions structurées)
+  factionRef Faction? @relation(fields: [factionId], references: [id])
   listNotes String? // notes sur la liste
 
   // Scores cumulés (mis à jour après chaque round)

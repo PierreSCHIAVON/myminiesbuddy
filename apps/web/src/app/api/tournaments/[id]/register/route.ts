@@ -15,7 +15,7 @@ export async function POST(
 
     const { id: tournamentId } = await params
     const body = await request.json().catch(() => ({}))
-    const { faction } = body
+    const { factionId } = body
 
     // Trouver l'utilisateur en base
     const user = await prisma.user.findFirst({
@@ -48,7 +48,7 @@ export async function POST(
       data: {
         tournamentId,
         userId: user.id,
-        faction: faction || null,
+        factionId: factionId || null,
       },
     })
 

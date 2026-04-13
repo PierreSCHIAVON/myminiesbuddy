@@ -104,6 +104,15 @@
     "activeTournaments": "tournois actifs",
     "factionLabel": "factions",
     "noTournamentsForGame": "Aucun tournoi ouvert pour ce jeu pour le moment.",
-    "organizeTournament": "Organiser un tournoi"
+    "organizeTournament": "Organiser un tournoi",
+    "statsTitle": "Statistiques par faction",
+    "statsSubtitle": "Basé sur les tournois terminés",
+    "statsFaction": "Faction",
+    "statsPlayers": "Joueurs",
+    "statsMeta": "Méta %",
+    "statsWins": "V",
+    "statsLosses": "D",
+    "statsDraws": "N",
+    "statsWinRate": "Taux de victoire"
   }
 }
