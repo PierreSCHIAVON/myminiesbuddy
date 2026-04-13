@@ -15,7 +15,7 @@ export async function POST(
 
     const { id: tournamentId } = await params
     const body = await request.json().catch(() => ({}))
-    const { factionId } = body
+    const { factionId, listNotes, pseudo, teamName } = body
 
     // Trouver l'utilisateur en base
     const user = await prisma.user.findFirst({
@@ -49,6 +49,9 @@ export async function POST(
         tournamentId,
         userId: user.id,
         factionId: factionId || null,
+        listNotes: listNotes || null,
+        pseudo: pseudo?.trim() || null,
+        teamName: teamName?.trim() || null,
       },
     })
 
@@ -59,6 +62,47 @@ export async function POST(
     }
     console.error('Error registering:', error)
     return NextResponse.json({ error: 'Failed to register' }, { status: 500 })
+  }
+}
+
+// PATCH — mettre à jour la liste d'armée (et/ou la faction)
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id: tournamentId } = await params
+    const { listNotes, factionId, pseudo, teamName } = await request.json().catch(() => ({}))
+
+    const user = await prisma.user.findFirst({
+      where: { email: session.user.email! },
+    })
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const updated = await prisma.tournamentPlayer.update({
+      where: { tournamentId_userId: { tournamentId, userId: user.id } },
+      data: {
+        ...(listNotes !== undefined && { listNotes: listNotes || null }),
+        ...(factionId !== undefined && { factionId: factionId || null }),
+        ...(pseudo !== undefined && { pseudo: pseudo?.trim() || null }),
+        ...(teamName !== undefined && { teamName: teamName?.trim() || null }),
+      },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Not registered' }, { status: 404 })
+    }
+    console.error('Error updating registration:', error)
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
   }
 }
 

@@ -18,6 +18,15 @@ interface Props {
   registerLabel: string
   unregisterLabel: string
   fullLabel: string
+  armyListLabel?: string
+  armyListPlaceholder?: string
+  armyListOptional?: string
+  pseudoLabel?: string
+  pseudoPlaceholder?: string
+  pseudoOptional?: string
+  teamNameLabel?: string
+  teamNamePlaceholder?: string
+  teamNameOptional?: string
 }
 
 export function RegisterButton({
@@ -28,11 +37,23 @@ export function RegisterButton({
   registerLabel,
   unregisterLabel,
   fullLabel,
+  armyListLabel,
+  armyListPlaceholder,
+  armyListOptional,
+  pseudoLabel,
+  pseudoPlaceholder,
+  pseudoOptional,
+  teamNameLabel,
+  teamNamePlaceholder,
+  teamNameOptional,
 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [factionId, setFactionId] = useState<string>('')
+  const [listNotes, setListNotes] = useState<string>('')
+  const [pseudo, setPseudo] = useState<string>('')
+  const [teamName, setTeamName] = useState<string>('')
 
   const safeFactions = factions ?? []
 
@@ -52,7 +73,12 @@ export function RegisterButton({
       const res = await fetch(`/api/tournaments/${tournamentId}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ factionId: factionId || null }),
+        body: JSON.stringify({
+          factionId: factionId || null,
+          listNotes: listNotes || null,
+          pseudo: pseudo.trim() || null,
+          teamName: teamName.trim() || null,
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -110,7 +136,7 @@ export function RegisterButton({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2 w-full">
           {safeFactions.length > 0 && (
             <select
               value={factionId}
@@ -135,8 +161,57 @@ export function RegisterButton({
                   ))}
             </select>
           )}
+          {pseudoLabel && (
+            <div className="w-full">
+              <label className="text-xs text-gray-400 mb-1 block">
+                {pseudoLabel}
+                {pseudoOptional && <span className="text-gray-600 ml-1">— {pseudoOptional}</span>}
+              </label>
+              <input
+                type="text"
+                value={pseudo}
+                onChange={(e) => setPseudo(e.target.value)}
+                placeholder={pseudoPlaceholder}
+                maxLength={50}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-orange-600/60"
+              />
+            </div>
+          )}
+          {teamNameLabel && (
+            <div className="w-full">
+              <label className="text-xs text-gray-400 mb-1 block">
+                {teamNameLabel}
+                {teamNameOptional && <span className="text-gray-600 ml-1">— {teamNameOptional}</span>}
+              </label>
+              <input
+                type="text"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder={teamNamePlaceholder}
+                maxLength={50}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-orange-600/60"
+              />
+            </div>
+          )}
+          {armyListLabel && (
+            <div className="w-full">
+              <label className="text-xs text-gray-400 mb-1 block">
+                {armyListLabel}
+                {armyListOptional && (
+                  <span className="text-gray-600 ml-1">— {armyListOptional}</span>
+                )}
+              </label>
+              <textarea
+                value={listNotes}
+                onChange={(e) => setListNotes(e.target.value)}
+                placeholder={armyListPlaceholder}
+                rows={4}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-orange-600/60 resize-y font-mono"
+              />
+            </div>
+          )}
           <Button
-            className="bg-orange-600 hover:bg-orange-700"
+            className="bg-orange-600 hover:bg-orange-700 self-end"
             onClick={handleRegister}
             disabled={isFull || loading}
           >

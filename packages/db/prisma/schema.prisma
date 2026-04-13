@@ -126,6 +126,8 @@ model TournamentPlayer {
   factionId String? // FK vers Faction (null si jeu sans factions structurées)
   factionRef Faction? @relation(fields: [factionId], references: [id])
   listNotes String? // notes sur la liste
+  pseudo    String? // nom affiché dans le tournoi (override de user.name)
+  teamName  String? // équipe représentée (string libre — Option A)
 
   // Scores cumulés (mis à jour après chaque round)
   wins   Int @default(0)

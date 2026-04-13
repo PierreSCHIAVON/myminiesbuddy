@@ -56,16 +56,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.role = 'user'
         }
       } else if (!token.userId && token.email) {
-        // Credentials login — lookup by email
+        // Credentials login (dev) — upsert en DB avec le bon rôle
+        const devRoles: Record<string, string> = {
+          'organizer@example.com': 'ORGANIZER',
+          'demo@example.com': 'PLAYER',
+        }
         try {
-          const user = await prisma.user.findFirst({
+          const user = await prisma.user.upsert({
             where: { email: token.email },
+            create: {
+              keycloakId: `dev-${token.email}`,
+              email: token.email,
+              name: (token.name as string) ?? token.email,
+              role: (devRoles[token.email] ?? 'PLAYER') as any,
+            },
+            update: {},
             select: { id: true, role: true },
           })
-          if (user) {
-            token.userId = user.id
-            token.role = user.role
-          }
+          token.userId = user.id
+          token.role = user.role
         } catch {
           // DB not available
         }

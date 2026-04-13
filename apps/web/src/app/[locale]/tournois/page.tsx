@@ -1,10 +1,10 @@
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { prisma } from '@warforge/db'
 import { TournamentListRegisterButton } from '@/components/tournament-list-register-button'
+import { TournamentsFilters } from '@/components/tournaments-filters'
 
 export default async function TournamentsPage({
   params,
@@ -69,51 +69,16 @@ export default async function TournamentsPage({
 
       {/* Search & Filters */}
       <section className="mb-8">
-        <form
-          key={`${gameFilter ?? ''}-${searchQuery ?? ''}`}
-          method="GET"
-          className="flex flex-col md:flex-row md:items-center gap-3"
-        >
-          <Input
-            name="search"
-            placeholder={t('searchPlaceholder')}
-            className="flex-1 bg-gray-900 border-gray-700"
-            defaultValue={searchQuery || ''}
-          />
-
-          <select
-            name="game"
-            className="px-4 py-2 bg-gray-900 border border-gray-700 rounded-md text-foreground hover:border-gray-600 transition-colors"
-            defaultValue={gameFilter || ''}
-          >
-            <option value="">{t('filterByGame')}</option>
-            {gamesList.map((game) => (
-              <option key={game.slug} value={game.slug}>
-                {game.name}
-              </option>
-            ))}
-          </select>
-
-          <Button type="submit" variant="outline" className="whitespace-nowrap">
-            {t('filterApply')}
-          </Button>
-
-          {(gameFilter || searchQuery) && (
-            <Link
-              href={`/${locale}/tournois`}
-              className="inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted whitespace-nowrap transition-colors"
-            >
-              ✕ {t('filterClear')}
-            </Link>
-          )}
-
-          <Link
-            href={`/${locale}/tournois/nouveau`}
-            className="inline-flex items-center justify-center rounded-lg bg-orange-600 hover:bg-orange-700 px-4 py-2 text-sm font-medium text-white whitespace-nowrap transition-colors"
-          >
-            + {t('createTournament')}
-          </Link>
-        </form>
+        <TournamentsFilters
+          locale={locale}
+          games={gamesList}
+          currentSearch={searchQuery}
+          currentGame={gameFilter}
+          createLabel={`+ ${t('createTournament')}`}
+          searchPlaceholder={t('searchPlaceholder')}
+          filterByGameLabel={t('filterByGame')}
+          filterClearLabel={t('filterClear')}
+        />
       </section>
 
       {/* Upcoming Tournaments */}
