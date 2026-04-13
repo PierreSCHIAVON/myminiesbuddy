@@ -1,17 +1,21 @@
 import { getTranslations } from 'next-intl/server'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { prisma } from '@warforge/db'
 import Link from 'next/link'
+import { RankingsGameFilter } from '@/components/rankings-game-filter'
+
+const PAGE_SIZE = 50
 
 export default async function RankingsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ game?: string }>
+  searchParams: Promise<{ game?: string; page?: string }>
 }) {
   const { locale } = await params
-  const { game: gameFilter } = await searchParams
+  const { game: gameFilter, page: pageParam } = await searchParams
+  const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
   const t = await getTranslations({ locale, namespace: 'rankings' })
 
   let games: { id: string; name: string; slug: string }[] = []
@@ -78,6 +82,18 @@ export default async function RankingsPage({
 
   const selectedGame = games.find((g) => g.slug === gameFilter)
 
+  const totalPages = Math.max(1, Math.ceil(rankings.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const pageRankings = rankings.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams()
+    if (gameFilter) params.set('game', gameFilter)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return `/${locale}/rankings${qs ? `?${qs}` : ''}`
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Header */}
@@ -88,31 +104,12 @@ export default async function RankingsPage({
 
       {/* Filtre par jeu */}
       <section className="mb-8">
-        <form method="GET" className="flex flex-wrap gap-2">
-          <Link
-            href={`/${locale}/rankings`}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              !gameFilter
-                ? 'border-orange-600/60 bg-orange-600/10 text-orange-400'
-                : 'border-gray-700 text-gray-400 hover:border-gray-500'
-            }`}
-          >
-            {t('filterByGame')}
-          </Link>
-          {games.map((game) => (
-            <Link
-              key={game.slug}
-              href={`/${locale}/rankings?game=${game.slug}`}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                gameFilter === game.slug
-                  ? 'border-orange-600/60 bg-orange-600/10 text-orange-400'
-                  : 'border-gray-700 text-gray-400 hover:border-gray-500'
-              }`}
-            >
-              {game.name}
-            </Link>
-          ))}
-        </form>
+        <RankingsGameFilter
+          games={games}
+          currentGame={gameFilter}
+          allLabel={t('filterByGame')}
+          locale={locale}
+        />
       </section>
 
       {/* Tableau */}
@@ -140,9 +137,10 @@ export default async function RankingsPage({
             </div>
 
             <div className="divide-y divide-gray-800/60">
-              {rankings.map((player, idx) => {
-                const isFirst = idx === 0
-                const isTop3 = idx < 3
+              {pageRankings.map((player, idx) => {
+                const globalIdx = (safePage - 1) * PAGE_SIZE + idx
+                const isFirst = globalIdx === 0
+                const isTop3 = globalIdx < 3
                 const medalColor = ['text-yellow-400', 'text-gray-300', 'text-orange-600']
 
                 return (
@@ -155,10 +153,10 @@ export default async function RankingsPage({
                     {/* Rang */}
                     <span
                       className={`text-sm font-bold font-mono ${
-                        isTop3 ? medalColor[idx] ?? 'text-gray-500' : 'text-gray-500'
+                        isTop3 ? medalColor[globalIdx] ?? 'text-gray-500' : 'text-gray-500'
                       }`}
                     >
-                      {isTop3 ? ['🥇', '🥈', '🥉'][idx] : idx + 1}
+                      {isTop3 ? ['🥇', '🥈', '🥉'][globalIdx] : globalIdx + 1}
                     </span>
 
                     {/* Nom */}
@@ -197,6 +195,52 @@ export default async function RankingsPage({
               })}
             </div>
           </Card>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-gray-500">
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, rankings.length)} sur {rankings.length} joueurs
+            </p>
+            <div className="flex items-center gap-1">
+              <Link
+                href={pageUrl(safePage - 1)}
+                aria-disabled={safePage === 1}
+                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                  safePage === 1
+                    ? 'border-gray-800 text-gray-700 pointer-events-none'
+                    : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200'
+                }`}
+              >
+                ←
+              </Link>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={pageUrl(p)}
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                    p === safePage
+                      ? 'border-orange-600/60 bg-orange-600/10 text-orange-400'
+                      : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200'
+                  }`}
+                >
+                  {p}
+                </Link>
+              ))}
+              <Link
+                href={pageUrl(safePage + 1)}
+                aria-disabled={safePage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                  safePage === totalPages
+                    ? 'border-gray-800 text-gray-700 pointer-events-none'
+                    : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200'
+                }`}
+              >
+                →
+              </Link>
+            </div>
+          </div>
         )}
       </section>
     </div>
