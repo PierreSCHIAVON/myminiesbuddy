@@ -25,6 +25,7 @@ model User {
 
   organizedTournaments Tournament[]       @relation("Organizer")
   participations       TournamentPlayer[]
+  notifications        Notification[]
 }
 
 enum UserRole {
@@ -196,4 +197,25 @@ enum MatchStatus {
   IN_PROGRESS // en cours
   COMPLETED   // résultat saisi
   BYE         // joueur exempt (adversaire absent ou nombre impair)
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS IN-APP
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?          // URL de destination au clic
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+enum NotificationType {
+  NEW_REGISTRATION   // organisateur : nouveau joueur inscrit
+  TOURNAMENT_START   // joueur : le tournoi démarre
 }

@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NotificationBell } from '@/components/notification-bell'
 
 export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
   const session = await auth()
@@ -41,6 +42,7 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
 
           {/* Auth */}
           <div className="flex items-center gap-3">
+            {session?.user && <NotificationBell locale={locale} />}
             {session?.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger className="relative h-9 w-9 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-600">

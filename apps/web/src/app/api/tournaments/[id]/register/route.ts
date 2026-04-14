@@ -1,6 +1,7 @@
 import { prisma } from '@warforge/db'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { createNotification } from '@/lib/notifications'
 
 // POST — s'inscrire au tournoi
 export async function POST(
@@ -31,7 +32,10 @@ export async function POST(
     // Vérifier que le tournoi existe et est ouvert
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
-      include: { _count: { select: { players: true } } },
+      include: {
+        _count: { select: { players: true } },
+        organizer: { select: { id: true, name: true } },
+      },
     })
     if (!tournament) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
@@ -54,6 +58,17 @@ export async function POST(
         teamName: teamName?.trim() || null,
       },
     })
+
+    // Notifier l'organisateur (fire & forget)
+    if (tournament.organizerId !== user.id) {
+      createNotification({
+        userId: tournament.organizerId,
+        type: 'NEW_REGISTRATION',
+        title: `Nouvelle inscription : ${tournament.name}`,
+        body: `${user.name ?? user.email} vient de s'inscrire à votre tournoi.`,
+        link: `/tournois/${tournamentId}`,
+      })
+    }
 
     return NextResponse.json(registration, { status: 201 })
   } catch (error: any) {

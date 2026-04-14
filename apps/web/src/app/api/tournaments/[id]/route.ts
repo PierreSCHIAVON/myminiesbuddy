@@ -1,6 +1,7 @@
 import { prisma } from '@warforge/db'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { createNotifications } from '@/lib/notifications'
 
 export async function GET(
   request: Request,
@@ -106,8 +107,25 @@ export async function PATCH(
         ...(pointsLimit !== undefined && { pointsLimit: pointsLimit ? parseInt(pointsLimit) : null }),
         ...(status && { status }),
       },
-      include: { game: true },
+      include: {
+        game: true,
+        players: { select: { userId: true } },
+      },
     })
+
+    // Notifier tous les joueurs inscrits quand le tournoi démarre
+    if (status === 'IN_PROGRESS' && tournament.status !== 'IN_PROGRESS') {
+      const playerNotifications = updated.players
+        .filter((p) => p.userId !== tournament.organizerId)
+        .map((p) => ({
+          userId: p.userId,
+          type: 'TOURNAMENT_START' as const,
+          title: `Le tournoi commence : ${updated.name}`,
+          body: 'La première ronde vient d\'être lancée. Bonne chance !',
+          link: `/tournois/${id}`,
+        }))
+      createNotifications(playerNotifications)
+    }
 
     return NextResponse.json(updated)
   } catch (error) {
