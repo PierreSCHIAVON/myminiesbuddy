@@ -108,7 +108,7 @@ export async function PATCH(
         },
       })
 
-      // Mettre à jour les stats des joueurs
+      // Mettre à jour les stats individuelles des joueurs
       if (winnerId === match.player1Id) {
         await tx.tournamentPlayer.update({
           where: { id: match.player1Id },
@@ -142,16 +142,171 @@ export async function PATCH(
         }
       }
 
-      // Si tous les matchs de la ronde sont terminés, clore la ronde
-      const allMatches = await tx.match.findMany({ where: { roundId } })
-      const allDone = allMatches.every(
-        (m) => m.status === 'COMPLETED' || m.status === 'BYE'
-      )
-      if (allDone) {
-        await tx.round.update({
-          where: { id: roundId },
-          data: { status: 'COMPLETED' },
+      // ── Recalcul du TeamMatch si applicable ───────────────────────────────
+      if (match.teamMatchId) {
+        const allMatchesInTeamMatch = await tx.match.findMany({
+          where: { teamMatchId: match.teamMatchId },
         })
+
+        // Recalcul avec le nouveau résultat du match courant
+        const updatedMatches = allMatchesInTeamMatch.map((m) =>
+          m.id === matchId ? { ...m, winnerId, status: 'COMPLETED' as const } : m
+        )
+
+        const allDone = updatedMatches.every(
+          (m) => m.status === 'COMPLETED' || m.status === 'BYE'
+        )
+
+        if (allDone) {
+          const teamMatch = await tx.teamMatch.findUnique({
+            where: { id: match.teamMatchId },
+          })
+          if (!teamMatch) return
+
+          // Compter les tables remportées par chaque équipe
+          // On identifie team1/team2 via les joueurs appartenant aux équipes
+          // Récupération des joueurs de chaque équipe
+          const team1Players = await tx.tournamentPlayer.findMany({
+            where: { teamId: teamMatch.team1Id },
+            select: { id: true },
+          })
+          const team1PlayerIds = new Set(team1Players.map((p) => p.id))
+
+          let team1TableWins = 0
+          let team2TableWins = 0
+          let team1TableLosses = 0
+          let team2TableLosses = 0
+
+          for (const m of updatedMatches) {
+            if (m.status === 'BYE') continue // BYE individuel ne compte pas dans le score équipe
+            if (!m.winnerId) {
+              // Draw individuel — on ne l'attribue à aucune équipe
+              continue
+            }
+            if (team1PlayerIds.has(m.winnerId)) {
+              team1TableWins++
+              team2TableLosses++
+            } else {
+              team2TableWins++
+              team1TableLosses++
+            }
+          }
+
+          // Déterminer le gagnant du match d'équipe
+          let teamWinnerId: string | null = null
+          if (team1TableWins > team2TableWins) teamWinnerId = teamMatch.team1Id
+          else if (team2TableWins > team1TableWins) teamWinnerId = teamMatch.team2Id ?? null
+
+          const isTeamDraw = team1TableWins === team2TableWins
+
+          // Annuler l'ancien résultat d'équipe si le TeamMatch était déjà terminé
+          if (teamMatch.status === 'COMPLETED') {
+            if (teamMatch.winnerId === teamMatch.team1Id) {
+              await tx.team.update({
+                where: { id: teamMatch.team1Id },
+                data: { wins: { decrement: 1 }, points: { decrement: 3 } },
+              })
+              if (teamMatch.team2Id) {
+                await tx.team.update({
+                  where: { id: teamMatch.team2Id },
+                  data: { losses: { decrement: 1 } },
+                })
+              }
+            } else if (teamMatch.winnerId === teamMatch.team2Id && teamMatch.team2Id) {
+              await tx.team.update({
+                where: { id: teamMatch.team2Id },
+                data: { wins: { decrement: 1 }, points: { decrement: 3 } },
+              })
+              await tx.team.update({
+                where: { id: teamMatch.team1Id },
+                data: { losses: { decrement: 1 } },
+              })
+            } else if (!teamMatch.winnerId && teamMatch.team2Id) {
+              // ancien draw
+              await tx.team.update({
+                where: { id: teamMatch.team1Id },
+                data: { draws: { decrement: 1 }, points: { decrement: 1 } },
+              })
+              await tx.team.update({
+                where: { id: teamMatch.team2Id },
+                data: { draws: { decrement: 1 }, points: { decrement: 1 } },
+              })
+            }
+          }
+
+          // Mettre à jour le TeamMatch
+          await tx.teamMatch.update({
+            where: { id: match.teamMatchId },
+            data: {
+              team1TableWins,
+              team2TableWins,
+              winnerId: teamWinnerId,
+              status: 'COMPLETED',
+            },
+          })
+
+          // Mettre à jour les stats des équipes
+          if (teamWinnerId === teamMatch.team1Id) {
+            await tx.team.update({
+              where: { id: teamMatch.team1Id },
+              data: { wins: { increment: 1 }, points: { increment: 3 } },
+            })
+            if (teamMatch.team2Id) {
+              await tx.team.update({
+                where: { id: teamMatch.team2Id },
+                data: { losses: { increment: 1 } },
+              })
+            }
+          } else if (teamWinnerId === teamMatch.team2Id && teamMatch.team2Id) {
+            await tx.team.update({
+              where: { id: teamMatch.team2Id },
+              data: { wins: { increment: 1 }, points: { increment: 3 } },
+            })
+            await tx.team.update({
+              where: { id: teamMatch.team1Id },
+              data: { losses: { increment: 1 } },
+            })
+          } else if (isTeamDraw && teamMatch.team2Id) {
+            await tx.team.update({
+              where: { id: teamMatch.team1Id },
+              data: { draws: { increment: 1 }, points: { increment: 1 } },
+            })
+            await tx.team.update({
+              where: { id: teamMatch.team2Id },
+              data: { draws: { increment: 1 }, points: { increment: 1 } },
+            })
+          }
+        }
+      }
+
+      // ── Clôture de la ronde ───────────────────────────────────────────────
+      // Tournoi par équipes : la ronde se ferme quand tous les TeamMatch sont COMPLETED
+      // Tournoi individuel : la ronde se ferme quand tous les Match sont COMPLETED/BYE
+      const round = await tx.round.findUnique({
+        where: { id: roundId },
+        include: { teamMatches: true, matches: true },
+      })
+
+      if (round) {
+        let allRoundDone: boolean
+        if (round.teamMatches.length > 0) {
+          // Tournoi équipe : vérifier les TeamMatch (le TeamMatch courant vient d'être mis à jour dans la TX)
+          const updatedTeamMatches = await tx.teamMatch.findMany({ where: { roundId } })
+          allRoundDone = updatedTeamMatches.every((tm) => tm.status === 'COMPLETED')
+        } else {
+          // Tournoi individuel
+          const allMatches = await tx.match.findMany({ where: { roundId } })
+          allRoundDone = allMatches.every(
+            (m) => m.status === 'COMPLETED' || m.status === 'BYE'
+          )
+        }
+
+        if (allRoundDone) {
+          await tx.round.update({
+            where: { id: roundId },
+            data: { status: 'COMPLETED' },
+          })
+        }
       }
     })
 

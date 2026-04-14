@@ -76,7 +76,12 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <form action={async () => { 'use server'; await signIn(undefined, { redirectTo: `/${locale}` }) }}>
+              <form action={async () => {
+                'use server'
+                // Si Keycloak est configuré : redirect direct sans page intermédiaire NextAuth
+                const provider = process.env.KEYCLOAK_ISSUER ? 'keycloak' : undefined
+                await signIn(provider, { redirectTo: `/${locale}` })
+              }}>
                 <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700">
                   {t('signIn')}
                 </Button>

@@ -85,6 +85,7 @@ model Tournament {
   status      TournamentStatus @default(DRAFT)
   format      TournamentFormat @default(SWISS)
   pointsLimit Int?             // limite de points pour les listes d'armée
+  teamSize    Int?             // null = individuel, 3 = 3v3, 4 = 4v4, etc.
 
   gameId      String
   game        Game   @relation(fields: [gameId], references: [id])
@@ -94,6 +95,7 @@ model Tournament {
 
   players TournamentPlayer[]
   rounds  Round[]
+  teams   Team[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,6 +131,8 @@ model TournamentPlayer {
   listNotes String? // notes sur la liste
   pseudo    String? // nom affiché dans le tournoi (override de user.name)
   teamName  String? // équipe représentée (string libre — Option A)
+  teamId    String? // FK vers Team (Option B — tournois par équipes structurées)
+  team      Team?   @relation(fields: [teamId], references: [id])
 
   // Scores cumulés (mis à jour après chaque round)
   wins   Int @default(0)
@@ -156,7 +160,8 @@ model Round {
   number       Int         // numéro de la ronde (1, 2, 3...)
   status       RoundStatus @default(PENDING)
 
-  matches Match[]
+  matches     Match[]
+  teamMatches TeamMatch[]
 
   createdAt DateTime @default(now())
 
@@ -185,8 +190,55 @@ model Match {
 
   status MatchStatus @default(PENDING)
 
-  table Int?    // numéro de table physique
-  notes String? // notes arbitre
+  table       Int?       // numéro de table physique
+  notes       String?    // notes arbitre
+  teamMatchId String?    // FK vers TeamMatch (null = tournoi individuel)
+  teamMatch   TeamMatch? @relation(fields: [teamMatchId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOURNOIS PAR ÉQUIPES
+// ─────────────────────────────────────────────────────────────
+
+model Team {
+  id           String             @id @default(cuid())
+  name         String
+  tournamentId String
+  tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players      TournamentPlayer[]
+  teamMatches1 TeamMatch[]        @relation("TeamMatch_team1")
+  teamMatches2 TeamMatch[]        @relation("TeamMatch_team2")
+
+  // Stats équipe (calculées après chaque match d'équipe)
+  wins   Int @default(0)
+  losses Int @default(0)
+  draws  Int @default(0)
+  points Int @default(0) // wins*3 + draws*1
+
+  createdAt DateTime @default(now())
+
+  @@unique([tournamentId, name])
+}
+
+model TeamMatch {
+  id      String @id @default(cuid())
+  roundId String
+  round   Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  team1Id String
+  team1   Team   @relation("TeamMatch_team1", fields: [team1Id], references: [id])
+  team2Id String? // null = BYE équipe
+  team2   Team?  @relation("TeamMatch_team2", fields: [team2Id], references: [id])
+
+  team1TableWins Int         @default(0) // tables remportées par équipe 1
+  team2TableWins Int         @default(0)
+  winnerId       String?     // teamId du gagnant, null = draw ou en cours
+  status         MatchStatus @default(PENDING)
+
+  matches Match[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

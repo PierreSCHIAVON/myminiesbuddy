@@ -200,7 +200,15 @@
     "armyListError": "Erreur lors de l'enregistrement",
     "armyListEmpty": "Aucune liste soumise",
     "armyListsTitle": "Listes d'armées",
-    "armyListPointsLimit": "Limite : {limit} pts"
+    "armyListPointsLimit": "Limite : {limit} pts",
+    "addPlayer": "Ajouter un joueur",
+    "addPlayerSearch": "Rechercher par nom ou email...",
+    "addPlayerFaction": "Faction",
+    "addPlayerFactionNone": "Sans faction",
+    "addPlayerConfirm": "Ajouter",
+    "addPlayerSuccess": "Joueur ajouté avec succès",
+    "addPlayerError": "Erreur lors de l'ajout du joueur",
+    "addPlayerAlready": "Ce joueur est déjà inscrit"
   },
   "games": {
     "title": "Jeux ({count})",
@@ -228,6 +236,10 @@
     "statsLosses": "D",
     "statsDraws": "N",
     "statsWinRate": "Taux de victoire",
+    "statsShowAll": "Voir les {count} autres factions sans données",
+    "statsShowLess": "Masquer les factions sans données",
+    "statsNoData": "Aucune donnée disponible — jouez des tournois pour alimenter les statistiques.",
+    "statsBasedOn": "Basé sur {tournaments} tournoi(s) terminé(s) · {players} participations",
     "seeTournaments": "Voir les tournois"
   }
 }

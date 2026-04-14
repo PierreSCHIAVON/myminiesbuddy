@@ -38,12 +38,34 @@ export default async function TournamentDetailPage({
           },
           orderBy: { registeredAt: 'asc' },
         },
+        teams: {
+          include: {
+            players: {
+              include: { user: { select: { id: true, name: true, email: true } } },
+              orderBy: { registeredAt: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
         rounds: {
           include: {
             matches: {
               include: {
                 player1: { include: { user: { select: { id: true, name: true } } } },
                 player2: { include: { user: { select: { id: true, name: true } } } },
+              },
+            },
+            teamMatches: {
+              include: {
+                team1: true,
+                team2: true,
+                matches: {
+                  include: {
+                    player1: { include: { user: { select: { id: true, name: true } } } },
+                    player2: { include: { user: { select: { id: true, name: true } } } },
+                  },
+                  orderBy: { table: 'asc' },
+                },
               },
             },
           },
@@ -139,6 +161,20 @@ export default async function TournamentDetailPage({
           tournamentId={tournament.id}
           currentStatus={tournament.status}
           locale={locale}
+          factions={tournament.game.factions}
+          teamSize={tournament.teamSize ?? null}
+          teams={tournament.teams ?? []}
+          unassignedPlayers={
+            tournament.teamSize
+              ? tournament.players
+                  .filter((p: any) => !p.teamId)
+                  .map((p: any) => ({
+                    id: p.id,
+                    user: p.user,
+                    pseudo: p.pseudo,
+                  }))
+              : []
+          }
           labels={{
             adminPanel: t('adminPanel'),
             publishTournament: t('publishTournament'),
@@ -148,6 +184,25 @@ export default async function TournamentDetailPage({
             deleteTournament: t('deleteTournament'),
             deleteConfirm: t('deleteConfirm'),
             actionError: t('actionError'),
+            addPlayer: t('addPlayer'),
+            addPlayerSearch: t('addPlayerSearch'),
+            addPlayerFaction: t('addPlayerFaction'),
+            addPlayerFactionNone: t('addPlayerFactionNone'),
+            addPlayerConfirm: t('addPlayerConfirm'),
+            addPlayerSuccess: t('addPlayerSuccess'),
+            addPlayerError: t('addPlayerError'),
+            addPlayerAlready: t('addPlayerAlready'),
+            teamsTitle: 'Équipes',
+            createTeam: 'Créer une équipe',
+            teamNamePlaceholder: 'Nom de l\'équipe',
+            createTeamButton: 'Créer',
+            deleteTeam: 'Supprimer',
+            deleteTeamConfirm: 'Supprimer cette équipe et désassigner ses joueurs ?',
+            assignPlayer: '+ Assigner un joueur',
+            assignNone: '—',
+            removePlayer: 'Retirer',
+            createTeamError: 'Erreur lors de la création',
+            createTeamDuplicate: 'Ce nom d\'équipe est déjà utilisé',
           }}
         />
       )}
@@ -342,6 +397,8 @@ export default async function TournamentDetailPage({
             tournamentId={tournament.id}
             rounds={tournament.rounds}
             players={tournament.players}
+            teams={tournament.teams}
+            teamSize={tournament.teamSize}
             isOrganizer={isOrganizer}
             tournamentStatus={tournament.status}
             labels={{

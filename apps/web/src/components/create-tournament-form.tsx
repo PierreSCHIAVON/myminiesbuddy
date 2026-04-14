@@ -29,6 +29,7 @@ export function CreateTournamentForm({ games, locale }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [minDate, setMinDate] = useState('')
+  const [isTeamTournament, setIsTeamTournament] = useState(false)
 
   useEffect(() => {
     setMinDate(new Date().toISOString().slice(0, 16))
@@ -40,6 +41,7 @@ export function CreateTournamentForm({ games, locale }: Props) {
     setLoading(true)
 
     const form = new FormData(e.currentTarget)
+    const teamSizeRaw = form.get('teamSize')
     const data = {
       name: form.get('name'),
       description: form.get('description'),
@@ -49,6 +51,7 @@ export function CreateTournamentForm({ games, locale }: Props) {
       maxPlayers: form.get('maxPlayers'),
       format: form.get('format'),
       pointsLimit: form.get('pointsLimit') || null,
+      teamSize: isTeamTournament && teamSizeRaw ? parseInt(teamSizeRaw as string) : null,
     }
 
     try {
@@ -186,6 +189,40 @@ export function CreateTournamentForm({ games, locale }: Props) {
               placeholder="ex: 2000"
               className="bg-gray-900 border-gray-700"
             />
+          </div>
+
+          {/* Tournoi par équipes */}
+          <div className="space-y-3 rounded-lg border border-gray-700/50 bg-gray-900/40 p-4">
+            <div className="flex items-center gap-3">
+              <input
+                id="isTeamTournament"
+                type="checkbox"
+                checked={isTeamTournament}
+                onChange={(e) => setIsTeamTournament(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-700 bg-gray-900 accent-orange-600"
+              />
+              <Label htmlFor="isTeamTournament" className="cursor-pointer">
+                Tournoi par équipes
+              </Label>
+            </div>
+            {isTeamTournament && (
+              <div className="space-y-2 pl-7">
+                <Label htmlFor="teamSize">Taille des équipes *</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="teamSize"
+                    name="teamSize"
+                    type="number"
+                    required={isTeamTournament}
+                    min={2}
+                    max={10}
+                    defaultValue={3}
+                    className="bg-gray-900 border-gray-700 w-24"
+                  />
+                  <span className="text-sm text-gray-400">joueurs par équipe (ex: 3 pour du 3v3)</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (

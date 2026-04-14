@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, description, gameId, date, location, maxPlayers, format, pointsLimit } = body
+    const { name, description, gameId, date, location, maxPlayers, format, pointsLimit, teamSize } = body
 
     if (!name || !gameId || !date) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
         maxPlayers: parseInt(maxPlayers) || 16,
         format: format || 'SWISS',
         pointsLimit: pointsLimit ? parseInt(pointsLimit) : null,
+        teamSize: teamSize ? parseInt(teamSize) : null,
         status: 'OPEN',
         gameId,
         organizerId: organizer.id,

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@warforge/db'
 import { notFound } from 'next/navigation'
+import { FactionStatsTable } from '@/components/faction-stats-table'
 
 export default async function GameDetailPage({
   params,
@@ -36,6 +37,8 @@ export default async function GameDetailPage({
   } | null = null
 
   let factionStats: FactionStat[] = []
+  let completedTournaments = 0
+  let totalPlayers = 0
 
   try {
     game = await prisma.game.findUnique({
@@ -49,6 +52,10 @@ export default async function GameDetailPage({
     })
 
     if (game) {
+      completedTournaments = await prisma.tournament.count({
+        where: { gameId: game.id, status: 'COMPLETED' },
+      })
+
       const raw = await prisma.tournamentPlayer.groupBy({
         by: ['factionId'],
         where: {
@@ -59,7 +66,7 @@ export default async function GameDetailPage({
         _sum: { wins: true, losses: true, draws: true },
       })
 
-      const totalPlayers = raw.reduce((s, r) => s + r._count.id, 0)
+      totalPlayers = raw.reduce((s, r) => s + r._count.id, 0)
 
       const factionIds = raw.map((r) => r.factionId!).filter(Boolean)
       const factionMap = factionIds.length
@@ -186,84 +193,27 @@ export default async function GameDetailPage({
       </section>
 
       {/* Factions & Stats */}
-      {allFactionRows.length > 0 && (
+      {game.factions.length > 0 && (
         <section className="mb-12">
           <h2 className="text-2xl font-bold mb-2">{t('statsTitle')}</h2>
-          <p className="text-sm text-gray-500 mb-6">{t('statsSubtitle')}</p>
-
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-gray-900/60">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-400">#</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-400">{t('statsFaction')}</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsPlayers')}</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsMeta')}</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsWins')}</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsLosses')}</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-400">{t('statsDraws')}</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-400">{t('statsWinRate')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allFactionRows.map(({ faction, stat }, idx) => (
-                  <tr
-                    key={faction.id}
-                    className="border-b border-border/50 hover:bg-gray-900/40 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-500 font-mono">{stat ? idx + 1 : '—'}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold">{faction.name}</div>
-                      {faction.group && (
-                        <div className="text-xs text-gray-500">{faction.group}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-300">
-                      {stat ? stat.players : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {stat
-                        ? <span className="text-orange-400 font-semibold">{stat.metaPct}%</span>
-                        : <span className="text-gray-600">—</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3 text-center text-green-400">
-                      {stat ? stat.wins : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center text-red-400">
-                      {stat ? stat.losses : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-400">
-                      {stat ? stat.draws : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {stat ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-orange-500 rounded-full"
-                              style={{ width: `${stat.winRate}%` }}
-                            />
-                          </div>
-                          <span
-                            className={`font-bold tabular-nums w-12 text-right ${
-                              stat.winRate >= 60
-                                ? 'text-green-400'
-                                : stat.winRate >= 40
-                                ? 'text-orange-400'
-                                : 'text-red-400'
-                            }`}
-                          >{stat.winRate}%</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-600 text-xs font-mono">TBD</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <FactionStatsTable
+            rows={allFactionRows}
+            labels={{
+              faction: t('statsFaction'),
+              players: t('statsPlayers'),
+              meta: t('statsMeta'),
+              wins: t('statsWins'),
+              losses: t('statsLosses'),
+              draws: t('statsDraws'),
+              winRate: t('statsWinRate'),
+              showAll: t('statsShowAll', { count: allFactionRows.filter(r => !r.stat).length }),
+              showLess: t('statsShowLess'),
+              noData: t('statsNoData'),
+              basedOn: completedTournaments > 0
+                ? t('statsBasedOn', { tournaments: completedTournaments, players: totalPlayers })
+                : '',
+            }}
+          />
         </section>
       )}
     </div>

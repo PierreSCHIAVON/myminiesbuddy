@@ -200,7 +200,15 @@
     "armyListError": "Failed to save",
     "armyListEmpty": "No list submitted",
     "armyListsTitle": "Army lists",
-    "armyListPointsLimit": "Limit: {limit} pts"
+    "armyListPointsLimit": "Limit: {limit} pts",
+    "addPlayer": "Add a player",
+    "addPlayerSearch": "Search by name or email...",
+    "addPlayerFaction": "Faction",
+    "addPlayerFactionNone": "No faction",
+    "addPlayerConfirm": "Add",
+    "addPlayerSuccess": "Player added successfully",
+    "addPlayerError": "Failed to add player",
+    "addPlayerAlready": "This player is already registered"
   },
   "games": {
     "title": "Games ({count})",
@@ -228,6 +236,10 @@
     "statsLosses": "L",
     "statsDraws": "D",
     "statsWinRate": "Win rate",
+    "statsShowAll": "Show {count} more factions with no data",
+    "statsShowLess": "Hide factions with no data",
+    "statsNoData": "No data yet — play some tournaments to populate the statistics.",
+    "statsBasedOn": "Based on {tournaments} completed tournament(s) · {players} participations",
     "seeTournaments": "See tournaments"
   }
 }
