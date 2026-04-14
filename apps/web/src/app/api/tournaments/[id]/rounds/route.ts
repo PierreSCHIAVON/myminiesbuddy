@@ -272,9 +272,9 @@ async function generateTeamRound(
   const activeTeams = tournament.teams.filter((t) => !absentSet.has(t.id))
   const absentTeams = tournament.teams.filter((t) => absentSet.has(t.id))
 
-  if (activeTeams.length < 2) {
+  if (activeTeams.length < 1) {
     return NextResponse.json(
-      { error: 'At least 2 active teams are required to generate a round' },
+      { error: 'At least 1 active team is required to generate a round' },
       { status: 400 }
     )
   }
