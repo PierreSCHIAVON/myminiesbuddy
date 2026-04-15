@@ -6,7 +6,8 @@
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
     "dashboard": "Dashboard",
-    "profile": "Mon profil"
+    "profile": "Mon profil",
+    "teams": "Équipes"
   },
   "rankings": {
     "title": "Classements",
@@ -138,6 +139,7 @@
     "available": "Disponible",
     "spotsAvailable": "{available} / {total} places",
     "spotsLeft": "places restantes",
+    "completed": "Terminé",
     "noTournamentsFound": "Aucun tournoi trouvé",
     "createTournament": "Créer un tournoi",
     "createTitle": "Créer un tournoi",

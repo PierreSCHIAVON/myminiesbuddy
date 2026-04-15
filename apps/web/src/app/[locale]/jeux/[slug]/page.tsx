@@ -140,7 +140,7 @@ export default async function GameDetailPage({
                 src={game.logoUrl}
                 alt={game.name}
                 fill
-                className="object-cover"
+                className="object-contain p-3"
                 unoptimized
               />
             ) : (

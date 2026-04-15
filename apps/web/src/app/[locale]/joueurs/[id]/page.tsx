@@ -31,9 +31,10 @@ export default async function PlayerProfilePage({
 
   let user: { name: string | null; country: string | null; createdAt: Date } | null = null
   let participations: any[] = []
+  let clubMemberships: any[] = []
 
   try {
-    ;[user, participations] = await Promise.all([
+    ;[user, participations, clubMemberships] = await Promise.all([
       prisma.user.findUnique({
         where: { id },
         select: { name: true, country: true, createdAt: true },
@@ -54,6 +55,11 @@ export default async function PlayerProfilePage({
           factionRef: { select: { name: true } },
         },
         orderBy: { tournament: { date: 'desc' } },
+      }),
+      prisma.clubMember.findMany({
+        where: { userId: id },
+        include: { club: { select: { id: true, name: true, slug: true } } },
+        orderBy: { joinedAt: 'asc' },
       }),
     ])
   } catch { /* DB not available */ }
@@ -183,6 +189,30 @@ export default async function PlayerProfilePage({
                 {name}
                 <span className="ml-1.5 text-gray-500 text-xs">{count}×</span>
               </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Équipes */}
+      {clubMemberships.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-lg font-bold mb-3">Équipes</h2>
+          <div className="flex flex-wrap gap-2">
+            {clubMemberships.map((m: any) => (
+              <Link
+                key={m.club.id}
+                href={`/${locale}/equipes/${m.club.slug}`}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 hover:border-orange-600/50 transition-colors text-sm"
+              >
+                <span className="h-5 w-5 rounded-full bg-orange-600/20 border border-orange-600/30 flex items-center justify-center text-orange-400 font-bold text-xs shrink-0">
+                  {m.club.name[0].toUpperCase()}
+                </span>
+                {m.club.name}
+                {m.role === 'CAPTAIN' && (
+                  <span className="text-xs text-orange-400">Cap.</span>
+                )}
+              </Link>
             ))}
           </div>
         </section>

@@ -21,7 +21,8 @@ export async function GET(request: Request) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+        { venueName: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -43,7 +44,8 @@ export async function GET(request: Request) {
       id: t.id,
       name: t.name,
       game: t.game.name,
-      location: t.location,
+      city: t.city,
+      venueName: t.venueName,
       date: t.date.toISOString(),
       currentPlayers: t._count.players,
       maxPlayers: t.maxPlayers,
@@ -68,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, description, gameId, date, location, maxPlayers, format, pointsLimit, teamSize } = body
+    const { name, description, gameId, date, venueName, address, postalCode, city, country, maxPlayers, format, pointsLimit, teamSize } = body
 
     if (!name || !gameId || !date) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -95,13 +97,38 @@ export async function POST(request: Request) {
       .replace(/\s+/g, '-')
     const slug = `${base}-${Date.now()}`
 
+    // Géocodage Nominatim (best-effort, silencieux si échec)
+    let lat: number | null = null
+    let lng: number | null = null
+    const addressParts = [address, postalCode, city, country].filter(Boolean)
+    if (addressParts.length > 0) {
+      try {
+        const q = encodeURIComponent(addressParts.join(', '))
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
+          { headers: { 'User-Agent': 'WarForge/1.0 (warforge.app)' } }
+        )
+        const results = await res.json()
+        if (results[0]) {
+          lat = parseFloat(results[0].lat)
+          lng = parseFloat(results[0].lon)
+        }
+      } catch { /* géocodage non critique */ }
+    }
+
     const tournament = await prisma.tournament.create({
       data: {
         name,
         description: description || null,
         slug,
         date: new Date(date),
-        location: location || null,
+        venueName: venueName || null,
+        address: address || null,
+        postalCode: postalCode || null,
+        city: city || null,
+        country: country || null,
+        lat,
+        lng,
         maxPlayers: parseInt(maxPlayers) || 16,
         format: format || 'SWISS',
         pointsLimit: pointsLimit ? parseInt(pointsLimit) : null,

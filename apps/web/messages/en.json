@@ -6,7 +6,8 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "dashboard": "Dashboard",
-    "profile": "My profile"
+    "profile": "My profile",
+    "teams": "Teams"
   },
   "rankings": {
     "title": "Rankings",
@@ -138,6 +139,7 @@
     "available": "Available",
     "spotsAvailable": "{available} / {total} places",
     "spotsLeft": "spots left",
+    "completed": "Completed",
     "noTournamentsFound": "No tournaments found",
     "createTournament": "Create a tournament",
     "createTitle": "Create a tournament",

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
+import { COUNTRIES, flagEmoji } from '@/lib/countries'
 
 interface Game {
   id: string
@@ -47,7 +48,11 @@ export function CreateTournamentForm({ games, locale }: Props) {
       description: form.get('description'),
       gameId: form.get('gameId'),
       date: form.get('date'),
-      location: form.get('location'),
+      venueName: form.get('venueName') || null,
+      address: form.get('address') || null,
+      postalCode: form.get('postalCode') || null,
+      city: form.get('city') || null,
+      country: form.get('country') || null,
       maxPlayers: form.get('maxPlayers'),
       format: form.get('format'),
       pointsLimit: form.get('pointsLimit') || null,
@@ -135,15 +140,66 @@ export function CreateTournamentForm({ games, locale }: Props) {
             />
           </div>
 
-          {/* Lieu */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Lieu</Label>
-            <Input
-              id="location"
-              name="location"
-              placeholder="ex: Paris, Club des Figurines"
-              className="bg-gray-900 border-gray-700"
-            />
+          {/* Adresse structurée */}
+          <div className="space-y-3 rounded-lg border border-gray-700/50 bg-gray-900/40 p-4">
+            <p className="text-sm font-medium text-gray-300">Lieu de l'événement</p>
+
+            <div className="space-y-2">
+              <Label htmlFor="venueName">Nom du lieu</Label>
+              <Input
+                id="venueName"
+                name="venueName"
+                placeholder="ex: Forges de Lumière"
+                className="bg-gray-900 border-gray-700"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input
+                id="address"
+                name="address"
+                placeholder="ex: 1 place Clémence Isaure"
+                className="bg-gray-900 border-gray-700"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Code postal</Label>
+                <Input
+                  id="postalCode"
+                  name="postalCode"
+                  placeholder="31320"
+                  className="bg-gray-900 border-gray-700"
+                />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="city">Ville</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  placeholder="Castanet Tolosan"
+                  className="bg-gray-900 border-gray-700"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Pays</Label>
+              <select
+                id="country"
+                name="country"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-orange-600"
+              >
+                <option value="">Sélectionner un pays</option>
+                {[...COUNTRIES].sort((a, b) => a.fr.localeCompare(b.fr)).map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {flagEmoji(c.code)} {c.fr}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Format + Nb joueurs */}

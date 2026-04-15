@@ -27,6 +27,10 @@ model User {
   organizedTournaments Tournament[]       @relation("Organizer")
   participations       TournamentPlayer[]
   notifications        Notification[]
+  captainedClubs       Club[]             @relation("ClubCaptain")
+  clubMemberships      ClubMember[]
+  sentInvitations      ClubInvitation[]   @relation("ClubInvitedBy")
+  receivedInvitations  ClubInvitation[]   @relation("ClubInvited")
 }
 
 enum UserRole {
@@ -81,7 +85,13 @@ model Tournament {
   description String?
   slug        String           @unique
   date        DateTime
-  location    String?
+  venueName   String?          // ex: "Forges de Lumière"
+  address     String?          // ex: "1 place Clémence Isaure"
+  postalCode  String?          // ex: "31320"
+  city        String?          // ex: "Castanet Tolosan"
+  country     String?          // ISO 3166-1 alpha-2 (ex: "FR")
+  lat         Float?           // latitude (géocodage Nominatim)
+  lng         Float?           // longitude
   maxPlayers  Int              @default(16)
   status      TournamentStatus @default(DRAFT)
   format      TournamentFormat @default(SWISS)
@@ -259,6 +269,64 @@ enum MatchStatus {
 }
 
 // ─────────────────────────────────────────────────────────────
+// CLUBS / ÉQUIPES PERMANENTES
+// ─────────────────────────────────────────────────────────────
+
+model Club {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logoUrl     String?
+
+  captainId   String
+  captain     User     @relation("ClubCaptain", fields: [captainId], references: [id])
+
+  members     ClubMember[]
+  invitations ClubInvitation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClubMember {
+  id       String   @id @default(cuid())
+  clubId   String
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     ClubRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  @@unique([clubId, userId])
+}
+
+model ClubInvitation {
+  id          String           @id @default(cuid())
+  clubId      String
+  club        Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User             @relation("ClubInvitedBy", fields: [invitedById], references: [id])
+  invitedId   String
+  invited     User             @relation("ClubInvited", fields: [invitedId], references: [id])
+  status      InvitationStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  @@unique([clubId, invitedId])
+}
+
+enum ClubRole {
+  CAPTAIN
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// ─────────────────────────────────────────────────────────────
 // NOTIFICATIONS IN-APP
 // ─────────────────────────────────────────────────────────────
 
@@ -277,6 +345,7 @@ model Notification {
 enum NotificationType {
   NEW_REGISTRATION   // organisateur : nouveau joueur inscrit
   TOURNAMENT_START   // joueur : le tournoi démarre
+  CLUB_INVITATION    // joueur : invitation à rejoindre un club
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -11,6 +11,8 @@ import { ArmyListEditor } from '@/components/army-list-editor'
 import { prisma } from '@warforge/db'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { flagEmoji, countryName } from '@/lib/countries'
+import { TournamentMapLoader } from '@/components/tournament-map-loader'
 
 // ─── Metadata pour les previews de partage (OG / Twitter) ───────────────────
 
@@ -21,7 +23,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params
 
-  let tournament: { name: string; description: string | null; date: Date; location: string | null; status: string; game: { name: string } } | null = null
+  let tournament: { name: string; description: string | null; date: Date; city: string | null; status: string; game: { name: string } } | null = null
   try {
     tournament = await prisma.tournament.findFirst({
       where: { OR: [{ id }, { slug: id }] },
@@ -29,7 +31,7 @@ export async function generateMetadata({
         name: true,
         description: true,
         date: true,
-        location: true,
+        city: true,
         status: true,
         game: { select: { name: true } },
       },
@@ -41,7 +43,7 @@ export async function generateMetadata({
   const date = new Date(tournament.date).toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
-  const location = tournament.location ? ` · ${tournament.location}` : ''
+  const location = tournament.city ? ` · ${tournament.city}` : ''
   const description = tournament.description
     ?? `${tournament.game.name} · ${date}${location}`
 
@@ -268,7 +270,7 @@ export default async function TournamentDetailPage({
       )}
 
       {/* Info cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-gray-400 uppercase tracking-wider">{t('date')}</CardTitle>
@@ -282,7 +284,28 @@ export default async function TournamentDetailPage({
             <CardTitle className="text-xs text-gray-400 uppercase tracking-wider">{t('location')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-semibold">{tournament.location || '—'}</p>
+            {tournament.city || tournament.venueName ? (
+              <address className="not-italic space-y-0.5">
+                {tournament.venueName && (
+                  <p className="font-semibold">{tournament.venueName}</p>
+                )}
+                {tournament.address && (
+                  <p className="text-sm text-gray-400">{tournament.address}</p>
+                )}
+                {(tournament.postalCode || tournament.city) && (
+                  <p className="text-sm text-gray-400">
+                    {[tournament.postalCode, tournament.city].filter(Boolean).join(' ')}
+                  </p>
+                )}
+                {tournament.country && (
+                  <p className="text-sm text-gray-400">
+                    {flagEmoji(tournament.country)} {countryName(tournament.country, locale)}
+                  </p>
+                )}
+              </address>
+            ) : (
+              <p className="text-gray-500">—</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -296,6 +319,17 @@ export default async function TournamentDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Carte */}
+      {tournament.lat && tournament.lng && (
+        <div className="mb-10">
+          <TournamentMapLoader
+            lat={tournament.lat}
+            lng={tournament.lng}
+            label={tournament.venueName ?? tournament.city ?? tournament.name}
+          />
+        </div>
+      )}
 
       {/* Bloc inscription */}
       {tournament.status === 'OPEN' && (

@@ -38,6 +38,9 @@ export async function Navbar({ locale }: { locale: 'fr' | 'en' }) {
             <Link href={`/${locale}/rankings`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {t('rankings')}
             </Link>
+            <Link href={`/${locale}/equipes`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('teams')}
+            </Link>
           </div>
 
           {/* Auth */}
