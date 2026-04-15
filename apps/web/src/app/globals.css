@@ -45,51 +45,55 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-/* ── Thème WarForge — dark gaming par défaut ────────────────── */
+/* ── Thème WarForge — Refined Dark SaaS ──────────────────────── */
 :root {
-  --background: oklch(0.12 0.01 260);        /* fond très sombre bleuté */
-  --foreground: oklch(0.92 0.01 80);          /* texte blanc chaud */
+  /* Fond neutre pur — pas de teinte colorée */
+  --background: oklch(0.09 0 0);
+  --foreground: oklch(0.93 0 0);
 
-  --card: oklch(0.17 0.015 260);              /* cartes légèrement plus claires */
-  --card-foreground: oklch(0.92 0.01 80);
+  /* Cards légèrement plus claires, pas de teinture */
+  --card: oklch(0.13 0 0);
+  --card-foreground: oklch(0.93 0 0);
 
-  --popover: oklch(0.17 0.015 260);
-  --popover-foreground: oklch(0.92 0.01 80);
+  --popover: oklch(0.14 0 0);
+  --popover-foreground: oklch(0.93 0 0);
 
-  /* Orange/Ambre — couleur signature WarForge */
-  --primary: oklch(0.72 0.18 45);
-  --primary-foreground: oklch(0.10 0.01 260);
+  /* Orange WarForge — signature, utilisé avec parcimonie */
+  --primary: oklch(0.70 0.19 42);
+  --primary-foreground: oklch(0.09 0 0);
 
-  --secondary: oklch(0.22 0.02 260);
-  --secondary-foreground: oklch(0.85 0.01 80);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.80 0 0);
 
-  --muted: oklch(0.20 0.015 260);
-  --muted-foreground: oklch(0.55 0.01 80);
+  --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.48 0 0);
 
-  --accent: oklch(0.72 0.18 45);             /* même orange que primary */
-  --accent-foreground: oklch(0.10 0.01 260);
+  --accent: oklch(0.70 0.19 42);
+  --accent-foreground: oklch(0.09 0 0);
 
-  --destructive: oklch(0.60 0.22 25);
-  --border: oklch(0.28 0.02 260);
-  --input: oklch(0.22 0.02 260);
-  --ring: oklch(0.72 0.18 45);
+  --destructive: oklch(0.58 0.22 25);
+  /* Border plus visible pour meilleure lisibilité */
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(0.70 0.19 42);
 
-  --chart-1: oklch(0.72 0.18 45);           /* orange */
-  --chart-2: oklch(0.65 0.15 200);          /* bleu */
-  --chart-3: oklch(0.70 0.15 145);          /* vert */
-  --chart-4: oklch(0.65 0.18 300);          /* violet */
-  --chart-5: oklch(0.68 0.18 0);            /* rouge */
+  --chart-1: oklch(0.70 0.19 42);
+  --chart-2: oklch(0.65 0.15 200);
+  --chart-3: oklch(0.70 0.15 145);
+  --chart-4: oklch(0.65 0.18 300);
+  --chart-5: oklch(0.68 0.18 0);
 
-  --radius: 0.5rem;
+  /* Radius légèrement plus grand = plus premium */
+  --radius: 0.625rem;
 
-  --sidebar: oklch(0.15 0.015 260);
-  --sidebar-foreground: oklch(0.92 0.01 80);
-  --sidebar-primary: oklch(0.72 0.18 45);
-  --sidebar-primary-foreground: oklch(0.10 0.01 260);
-  --sidebar-accent: oklch(0.20 0.02 260);
-  --sidebar-accent-foreground: oklch(0.85 0.01 80);
-  --sidebar-border: oklch(0.28 0.02 260);
-  --sidebar-ring: oklch(0.72 0.18 45);
+  --sidebar: oklch(0.11 0 0);
+  --sidebar-foreground: oklch(0.93 0 0);
+  --sidebar-primary: oklch(0.70 0.19 42);
+  --sidebar-primary-foreground: oklch(0.09 0 0);
+  --sidebar-accent: oklch(0.17 0 0);
+  --sidebar-accent-foreground: oklch(0.80 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.70 0.19 42);
 }
 
 @layer base {
@@ -97,7 +101,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
   html {
     @apply font-sans;

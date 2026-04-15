@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function HomePage({
   params,
@@ -10,83 +9,103 @@ export default async function HomePage({
 }) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'home' })
-  const navT = await getTranslations({ locale, namespace: 'nav' })
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      {/* Hero Section */}
-      <section className="text-center py-16">
-        <div className="mb-4 inline-block px-3 py-1 rounded-full bg-orange-600/20 border border-orange-600/50 text-sm text-orange-400">
-          {t('badge')}
+    <div>
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden">
+        {/* Gradient de fond subtil */}
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-950/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-600/5 blur-3xl rounded-full pointer-events-none" />
+
+        <div className="relative container mx-auto px-4 pt-24 pb-20 text-center max-w-4xl">
+          {/* Badge */}
+          <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-xs text-orange-400 font-medium tracking-wide">
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+            {t('badge')}
+          </div>
+
+          {/* Titre */}
+          <h1 className="text-6xl sm:text-7xl font-bold tracking-tighter leading-[1.05] mb-6">
+            La plateforme de{' '}
+            <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
+              tournois
+            </span>
+            {' '}pour joueurs de figurines
+          </h1>
+
+          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
+            {t('subtitle')}
+          </p>
+
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Link href={`/${locale}/tournois`}>
+              <Button size="lg" className="bg-orange-600 hover:bg-orange-700 font-medium">
+                {t('cta')}
+              </Button>
+            </Link>
+            <Link href={`/${locale}/jeux`}>
+              <Button size="lg" variant="outline" className="font-medium">
+                {t('ctaSecondary')}
+              </Button>
+            </Link>
+          </div>
         </div>
-        <h1 className="text-5xl font-bold tracking-tighter mb-4">
-          {t('title', { highlight: t('titleHighlight') })}
-        </h1>
-        <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-          {t('subtitle')}
+      </section>
+
+      {/* ── Features ──────────────────────────────────────────── */}
+      <section className="container mx-auto px-4 py-20 max-w-5xl">
+        <p className="text-xs text-muted-foreground uppercase tracking-widest text-center mb-12 font-medium">
+          {t('featuresTitle')}
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden">
+          {[
+            {
+              icon: '⚔',
+              title: t('features.tournaments.title'),
+              desc: t('features.tournaments.desc'),
+              href: `/${locale}/tournois`,
+            },
+            {
+              icon: '🏆',
+              title: t('features.rankings.title'),
+              desc: t('features.rankings.desc'),
+              href: `/${locale}/rankings`,
+            },
+            {
+              icon: '📋',
+              title: t('features.armies.title'),
+              desc: t('features.armies.desc'),
+              href: `/${locale}/jeux`,
+            },
+          ].map(({ icon, title, desc, href }) => (
+            <Link key={title} href={href} className="group bg-card hover:bg-muted/40 transition-colors p-8 flex flex-col gap-4">
+              <span className="text-2xl">{icon}</span>
+              <div>
+                <h3 className="font-semibold text-foreground mb-1 group-hover:text-orange-400 transition-colors">
+                  {title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+              </div>
+              <span className="text-xs text-muted-foreground group-hover:text-orange-400 transition-colors mt-auto">
+                En savoir plus →
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA final ─────────────────────────────────────────── */}
+      <section className="border-t border-border/60">
+        <div className="container mx-auto px-4 py-20 max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tighter mb-3">{t('ctaFinal')}</h2>
+          <p className="text-muted-foreground mb-8">{t('ctaFinalDesc')}</p>
           <Link href={`/${locale}/tournois`}>
-            <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-              {t('cta')}
-            </Button>
-          </Link>
-          <Link href={`/${locale}/jeux`}>
-            <Button size="lg" variant="outline">
-              {t('ctaSecondary')}
+            <Button size="lg" className="bg-orange-600 hover:bg-orange-700 font-medium">
+              {t('ctaFinalBtn')}
             </Button>
           </Link>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 mt-16">
-        <h2 className="text-3xl font-bold text-center mb-12">{t('featuresTitle')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('features.tournaments.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400">
-                {t('features.tournaments.desc')}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('features.rankings.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400">
-                {t('features.rankings.desc')}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('features.armies.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400">
-                {t('features.armies.desc')}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="text-center py-16 mt-16 border-t border-gray-800">
-        <h2 className="text-3xl font-bold mb-4">{t('ctaFinal')}</h2>
-        <p className="text-gray-400 mb-8">{t('ctaFinalDesc')}</p>
-        <Link href={`/${locale}/tournois`}>
-          <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-            {t('ctaFinalBtn')}
-          </Button>
-        </Link>
       </section>
     </div>
   )
