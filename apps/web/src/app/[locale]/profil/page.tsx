@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@warforge/db'
 import { ProfileNameEditor } from '@/components/profile-name-editor'
+import { ProfileCountrySelector } from '@/components/profile-country-selector'
 
 export default async function ProfilePage({
   params,
@@ -25,14 +26,14 @@ export default async function ProfilePage({
   const userId = session.user.id as string
   const role = (session.user.role as string) ?? 'PLAYER'
 
-  let dbUser: { name: string | null; createdAt: Date } | null = null
+  let dbUser: { name: string | null; country: string | null; createdAt: Date } | null = null
   let participations: any[] = []
 
   try {
     ;[dbUser, participations] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, createdAt: true },
+        select: { name: true, country: true, createdAt: true },
       }),
       prisma.tournamentPlayer.findMany({
         where: { userId },
@@ -122,6 +123,20 @@ export default async function ProfilePage({
                     editSuccess: t('editSuccess'),
                     editError: t('editError'),
                     nameTooShort: t('nameTooShort'),
+                  }}
+                />
+
+                <ProfileCountrySelector
+                  currentCountry={dbUser?.country ?? null}
+                  locale={locale}
+                  labels={{
+                    country: t('country'),
+                    edit: t('edit'),
+                    save: t('save'),
+                    cancel: t('cancel'),
+                    noCountry: t('noCountry'),
+                    saveSuccess: t('editSuccess'),
+                    saveError: t('editError'),
                   }}
                 />
 

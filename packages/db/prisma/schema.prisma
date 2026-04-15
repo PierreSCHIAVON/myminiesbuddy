@@ -19,6 +19,7 @@ model User {
   email       String   @unique
   name        String?
   image       String?
+  country     String?  // ISO 3166-1 alpha-2 (ex: "FR", "DE", "GB")
   role        UserRole @default(PLAYER)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

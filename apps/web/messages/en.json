@@ -21,7 +21,11 @@
     "winrate": "Win%",
     "played": "Tournaments",
     "noData": "No data yet. Rankings are based on completed tournaments.",
-    "topPlayer": "Leader"
+    "topPlayer": "Leader",
+    "world": "World",
+    "europe": "Europe",
+    "myCountry": "My country",
+    "loginRequired": "Sign in to filter by country"
   },
   "home": {
     "badge": "Open Beta — Join the forge",
@@ -87,9 +91,11 @@
     "edit": "Edit",
     "save": "Save",
     "cancel": "Cancel",
-    "editSuccess": "Name updated",
+    "editSuccess": "Updated",
     "editError": "Failed to update",
     "nameTooShort": "Name must be at least 2 characters",
+    "country": "Country",
+    "noCountry": "Not set",
     "role": "Role",
     "rolePlayer": "Player",
     "roleOrganizer": "Organiser",

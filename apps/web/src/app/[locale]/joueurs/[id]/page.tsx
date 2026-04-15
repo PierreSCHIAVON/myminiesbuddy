@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { prisma } from '@warforge/db'
 import type { Metadata } from 'next'
+import { countryName, flagEmoji } from '@/lib/countries'
 
 export async function generateMetadata({
   params,
@@ -28,14 +29,14 @@ export default async function PlayerProfilePage({
   const { locale, id } = await params
   const t = await getTranslations({ locale, namespace: 'playerProfile' })
 
-  let user: { name: string | null; createdAt: Date } | null = null
+  let user: { name: string | null; country: string | null; createdAt: Date } | null = null
   let participations: any[] = []
 
   try {
     ;[user, participations] = await Promise.all([
       prisma.user.findUnique({
         where: { id },
-        select: { name: true, createdAt: true },
+        select: { name: true, country: true, createdAt: true },
       }),
       prisma.tournamentPlayer.findMany({
         where: { userId: id },
@@ -129,7 +130,14 @@ export default async function PlayerProfilePage({
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tighter">{displayName}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('memberSince')} {memberSince}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {user.country && (
+              <span title={countryName(user.country, locale)} className="text-lg leading-none">
+                {flagEmoji(user.country)}
+              </span>
+            )}
+            <p className="text-gray-500 text-sm">{t('memberSince')} {memberSince}</p>
+          </div>
           {globalRank && (
             <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-600/15 text-orange-400 text-sm font-semibold">
               {globalRank <= 3 ? ['🥇', '🥈', '🥉'][globalRank - 1] : `#${globalRank}`} {t('globalRank')}

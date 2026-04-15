@@ -21,7 +21,11 @@
     "winrate": "Win%",
     "played": "Tournois",
     "noData": "Aucune donnée disponible. Les classements se basent sur les tournois terminés.",
-    "topPlayer": "Leader"
+    "topPlayer": "Leader",
+    "world": "Mondial",
+    "europe": "Europe",
+    "myCountry": "Mon pays",
+    "loginRequired": "Connecte-toi pour filtrer par pays"
   },
   "home": {
     "badge": "Beta ouverte — Rejoins la forge",
@@ -87,9 +91,11 @@
     "edit": "Modifier",
     "save": "Enregistrer",
     "cancel": "Annuler",
-    "editSuccess": "Nom mis à jour",
+    "editSuccess": "Mis à jour",
     "editError": "Erreur lors de la mise à jour",
     "nameTooShort": "Le nom doit contenir au moins 2 caractères",
+    "country": "Pays",
+    "noCountry": "Non renseigné",
     "role": "Rôle",
     "rolePlayer": "Joueur",
     "roleOrganizer": "Organisateur",

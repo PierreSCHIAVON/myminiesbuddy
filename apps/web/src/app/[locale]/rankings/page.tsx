@@ -3,6 +3,9 @@ import { Card } from '@/components/ui/card'
 import { prisma } from '@warforge/db'
 import Link from 'next/link'
 import { RankingsGameFilter } from '@/components/rankings-game-filter'
+import { RankingsGeoFilter } from '@/components/rankings-geo-filter'
+import { auth } from '@/auth'
+import { EUROPEAN_COUNTRY_CODES, countryName, flagEmoji } from '@/lib/countries'
 
 const PAGE_SIZE = 50
 
@@ -11,12 +14,31 @@ export default async function RankingsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ game?: string; page?: string }>
+  searchParams: Promise<{ game?: string; page?: string; region?: string }>
 }) {
   const { locale } = await params
-  const { game: gameFilter, page: pageParam } = await searchParams
+  const { game: gameFilter, page: pageParam, region: regionParam } = await searchParams
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
   const t = await getTranslations({ locale, namespace: 'rankings' })
+
+  // Auth pour connaître le pays de l'utilisateur connecté
+  const session = await auth()
+  let userCountry: string | null = null
+  try {
+    if (session?.user?.id) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id as string },
+        select: { country: true },
+      })
+      userCountry = dbUser?.country ?? null
+    }
+  } catch { /* DB not available */ }
+
+  // Résolution du filtre région
+  const region = regionParam ?? 'world'
+  const isEurope = region === 'europe'
+  const isCountry = region !== 'world' && region !== 'europe'
+  const countryFilter = isCountry ? region.toUpperCase() : null
 
   let games: { id: string; name: string; slug: string }[] = []
   let participations: any[] = []
@@ -33,6 +55,11 @@ export default async function RankingsPage({
             status: 'COMPLETED',
             ...(gameFilter ? { game: { slug: gameFilter } } : {}),
           },
+          ...(countryFilter
+            ? { user: { country: countryFilter } }
+            : isEurope
+            ? { user: { country: { in: [...EUROPEAN_COUNTRY_CODES] } } }
+            : {}),
         },
         select: {
           userId: true,
@@ -40,7 +67,7 @@ export default async function RankingsPage({
           losses: true,
           draws: true,
           points: true,
-          user: { select: { name: true } },
+          user: { select: { name: true, country: true } },
         },
       }),
     ])
@@ -51,12 +78,13 @@ export default async function RankingsPage({
   // Agréger par joueur
   const byUser = new Map<
     string,
-    { name: string; wins: number; losses: number; draws: number; points: number; played: number }
+    { name: string; country: string | null; wins: number; losses: number; draws: number; points: number; played: number }
   >()
 
   for (const p of participations) {
     const existing = byUser.get(p.userId) ?? {
       name: p.user.name ?? '—',
+      country: p.user.country ?? null,
       wins: 0,
       losses: 0,
       draws: 0,
@@ -89,10 +117,17 @@ export default async function RankingsPage({
   function pageUrl(p: number) {
     const params = new URLSearchParams()
     if (gameFilter) params.set('game', gameFilter)
+    if (regionParam) params.set('region', regionParam)
     if (p > 1) params.set('page', String(p))
     const qs = params.toString()
     return `/${locale}/rankings${qs ? `?${qs}` : ''}`
   }
+
+  const regionLabel = isCountry && countryFilter
+    ? `${flagEmoji(countryFilter)} ${countryName(countryFilter, locale)}`
+    : isEurope
+    ? t('europe')
+    : t('world')
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -102,8 +137,21 @@ export default async function RankingsPage({
         <p className="text-gray-400">{t('subtitle')}</p>
       </section>
 
-      {/* Filtre par jeu */}
-      <section className="mb-8">
+      {/* Filtres */}
+      <section className="mb-6 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <RankingsGeoFilter
+          locale={locale}
+          currentGame={gameFilter}
+          currentRegion={regionParam}
+          userCountry={userCountry}
+          countryName={userCountry ? countryName(userCountry, locale) : null}
+          labels={{
+            world: t('world'),
+            europe: t('europe'),
+            myCountry: t('myCountry'),
+            loginRequired: t('loginRequired'),
+          }}
+        />
         <RankingsGameFilter
           games={games}
           currentGame={gameFilter}
@@ -111,6 +159,11 @@ export default async function RankingsPage({
           locale={locale}
         />
       </section>
+
+      {/* Titre région active */}
+      {(isEurope || isCountry) && (
+        <p className="text-sm text-orange-400 font-medium mb-4">{regionLabel}</p>
+      )}
 
       {/* Tableau */}
       <section>
@@ -125,9 +178,10 @@ export default async function RankingsPage({
         ) : (
           <Card>
             {/* Header */}
-            <div className="px-4 py-3 grid grid-cols-[2.5rem_1fr_3.5rem_3rem_3rem_3rem_4rem_4rem] gap-2 text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+            <div className="px-4 py-3 grid grid-cols-[2.5rem_1fr_2rem_3.5rem_3rem_3rem_3rem_4rem_4rem] gap-2 text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
               <span>{t('rank')}</span>
               <span>{t('player')}</span>
+              <span />
               <span className="text-center">{t('pts')}</span>
               <span className="text-center">{t('w')}</span>
               <span className="text-center">{t('l')}</span>
@@ -146,7 +200,7 @@ export default async function RankingsPage({
                 return (
                   <div
                     key={player.userId}
-                    className={`px-4 py-3 grid grid-cols-[2.5rem_1fr_3.5rem_3rem_3rem_3rem_4rem_4rem] gap-2 items-center transition-colors hover:bg-gray-800/30 ${
+                    className={`px-4 py-3 grid grid-cols-[2.5rem_1fr_2rem_3.5rem_3rem_3rem_3rem_4rem_4rem] gap-2 items-center transition-colors hover:bg-gray-800/30 ${
                       isFirst ? 'bg-orange-600/5' : ''
                     }`}
                   >
@@ -171,6 +225,11 @@ export default async function RankingsPage({
                         </span>
                       )}
                     </Link>
+
+                    {/* Drapeau */}
+                    <span className="text-base leading-none" title={player.country ? countryName(player.country, locale) : undefined}>
+                      {player.country ? flagEmoji(player.country) : ''}
+                    </span>
 
                     {/* Points */}
                     <span className={`text-center font-bold ${isFirst ? 'text-orange-400 text-base' : 'text-orange-400/80'}`}>
