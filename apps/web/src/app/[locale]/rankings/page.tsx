@@ -160,14 +160,17 @@ export default async function RankingsPage({
                     </span>
 
                     {/* Nom */}
-                    <span className={`font-medium truncate ${isFirst ? 'text-white' : 'text-gray-200'}`}>
+                    <Link
+                      href={`/${locale}/joueurs/${player.userId}`}
+                      className={`font-medium truncate hover:text-orange-400 transition-colors ${isFirst ? 'text-white' : 'text-gray-200'}`}
+                    >
                       {player.name}
                       {isFirst && (
                         <span className="ml-2 text-xs text-orange-400 font-normal hidden sm:inline">
                           {t('topPlayer')}
                         </span>
                       )}
-                    </span>
+                    </Link>
 
                     {/* Points */}
                     <span className={`text-center font-bold ${isFirst ? 'text-orange-400 text-base' : 'text-orange-400/80'}`}>

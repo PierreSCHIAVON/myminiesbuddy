@@ -8,6 +8,7 @@ import {
   makeRequest,
   PREFIX,
 } from '../helpers/db'
+import { prisma } from '@warforge/db'
 import { organizerSession, playerSession, noSession } from '../helpers/auth'
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }))
@@ -53,6 +54,39 @@ describe('GET /api/tournaments', () => {
     const res = await listTournaments(req)
     const body = await res.json()
     expect(body.some((t: any) => t.name === name)).toBe(true)
+  })
+
+  it('game filter includes tournament of the matching game', async () => {
+    const game = await prisma.game.findUnique({ where: { id: gameId } })
+    if (!game) return
+
+    const name = `${PREFIX} GameFilter`
+    await createTestTournament(organizerId, gameId, { name })
+
+    const req = makeRequest('GET', `/api/tournaments?game=${game.slug}`)
+    const res = await listTournaments(req)
+    const body = await res.json()
+    expect(body.some((t: any) => t.name === name)).toBe(true)
+  })
+
+  it('game filter excludes tournaments of other games', async () => {
+    const name = `${PREFIX} OtherGameExclude`
+    await createTestTournament(organizerId, gameId, { name })
+
+    const otherGame = await prisma.game.findFirst({ where: { id: { not: gameId } }, orderBy: { name: 'asc' } })
+    if (!otherGame) return
+
+    const req = makeRequest('GET', `/api/tournaments?game=${otherGame.slug}`)
+    const res = await listTournaments(req)
+    const body = await res.json()
+    expect(body.some((t: any) => t.name === name)).toBe(false)
+  })
+
+  it('returns empty array for unknown game slug', async () => {
+    const req = makeRequest('GET', '/api/tournaments?game=jeu-qui-nexiste-pas')
+    const res = await listTournaments(req)
+    const body = await res.json()
+    expect(body).toEqual([])
   })
 })
 

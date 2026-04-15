@@ -210,6 +210,23 @@
     "addPlayerError": "Erreur lors de l'ajout du joueur",
     "addPlayerAlready": "Ce joueur est déjà inscrit"
   },
+  "playerProfile": {
+    "backToRankings": "Classements",
+    "memberSince": "Membre depuis",
+    "globalRank": "classement mondial",
+    "stats": "Statistiques globales",
+    "wins": "Victoires",
+    "losses": "Défaites",
+    "draws": "Nuls",
+    "winrate": "Winrate",
+    "totalPoints": "pts au total",
+    "tournamentsPlayed": "tournois joués",
+    "favoriteFactions": "Factions favorites",
+    "history": "Historique des tournois",
+    "noHistory": "Aucun tournoi joué pour le moment.",
+    "inProgress": "En cours",
+    "open": "Ouvert"
+  },
   "games": {
     "title": "Jeux ({count})",
     "subtitle": "Découvrez tous les jeux de figurines disponibles sur WarForge",

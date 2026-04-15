@@ -6,9 +6,60 @@ import { notFound } from 'next/navigation'
 import { RegisterButton } from '@/components/register-button'
 import { TournamentAdminPanel } from '@/components/tournament-admin-panel'
 import { TournamentRounds } from '@/components/tournament-rounds'
+import { TournamentBracket } from '@/components/tournament-bracket'
 import { ArmyListEditor } from '@/components/army-list-editor'
 import { prisma } from '@warforge/db'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+// ─── Metadata pour les previews de partage (OG / Twitter) ───────────────────
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+
+  let tournament: { name: string; description: string | null; date: Date; location: string | null; status: string; game: { name: string } } | null = null
+  try {
+    tournament = await prisma.tournament.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+      select: {
+        name: true,
+        description: true,
+        date: true,
+        location: true,
+        status: true,
+        game: { select: { name: true } },
+      },
+    })
+  } catch { /* DB unavailable */ }
+
+  if (!tournament) return { title: 'Tournoi introuvable' }
+
+  const date = new Date(tournament.date).toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
+  const location = tournament.location ? ` · ${tournament.location}` : ''
+  const description = tournament.description
+    ?? `${tournament.game.name} · ${date}${location}`
+
+  return {
+    title: tournament.name,
+    description,
+    openGraph: {
+      title: tournament.name,
+      description,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary',
+      title: tournament.name,
+      description,
+    },
+  }
+}
 
 export default async function TournamentDetailPage({
   params,
@@ -22,8 +73,8 @@ export default async function TournamentDetailPage({
   let tournament: any = null
 
   try {
-    tournament = await prisma.tournament.findUnique({
-      where: { id },
+    tournament = await prisma.tournament.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
       include: {
         game: {
           include: {
@@ -70,6 +121,15 @@ export default async function TournamentDetailPage({
             },
           },
           orderBy: { number: 'asc' },
+        },
+        bracketMatches: {
+          include: {
+            player1: { include: { user: { select: { id: true, name: true } } } },
+            player2: { include: { user: { select: { id: true, name: true } } } },
+            team1: true,
+            team2: true,
+          },
+          orderBy: [{ roundOf: 'desc' }, { position: 'asc' }],
         },
       },
     })
@@ -422,6 +482,48 @@ export default async function TournamentDetailPage({
               errorSubmit: t('errorSubmitResult'),
               absentPlayers: t('absentPlayers'),
               markAbsent: t('markAbsent'),
+            }}
+          />
+        </section>
+      )}
+
+      {/* Top-cut / Bracket */}
+      {(tournament.status === 'IN_PROGRESS' || tournament.status === 'COMPLETED') && (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold mb-4">Top-cut</h2>
+          <TournamentBracket
+            tournamentId={tournament.id}
+            matches={tournament.bracketMatches ?? []}
+            isOrganizer={isOrganizer}
+            topCutSize={tournament.topCutSize ?? null}
+            tournamentStatus={tournament.status}
+            players={tournament.players.map((p: any) => ({
+              id: p.id,
+              user: p.user,
+              pseudo: p.pseudo ?? null,
+              points: p.points,
+              wins: p.wins,
+              sos: p.sos,
+            }))}
+            teams={tournament.teams ?? null}
+            teamSize={tournament.teamSize ?? null}
+            labels={{
+              startTopCut: 'Démarrer le top-cut',
+              topCutSize: 'Taille',
+              generate: 'Générer le bracket',
+              generating: 'Génération…',
+              round: 'Round',
+              final: 'Finale',
+              semiFinal: 'Demi-finales',
+              quarterFinal: 'Quarts de finale',
+              roundOf: 'Top',
+              bye: 'BYE',
+              tbd: 'À déterminer',
+              submit: 'Valider',
+              submitting: '…',
+              draw: 'Les matchs de bracket ne peuvent pas être nuls',
+              bracketExists: 'Le bracket démarrera après les rondes Swiss.',
+              winner: 'Vainqueur',
             }}
           />
         </section>

@@ -86,6 +86,7 @@ model Tournament {
   format      TournamentFormat @default(SWISS)
   pointsLimit Int?             // limite de points pour les listes d'armée
   teamSize    Int?             // null = individuel, 3 = 3v3, 4 = 4v4, etc.
+  topCutSize  Int?             // null = pas de top-cut, 4/8/16 = bracket d'élimination
 
   gameId      String
   game        Game   @relation(fields: [gameId], references: [id])
@@ -93,9 +94,10 @@ model Tournament {
   organizerId String
   organizer   User   @relation("Organizer", fields: [organizerId], references: [id])
 
-  players TournamentPlayer[]
-  rounds  Round[]
-  teams   Team[]
+  players        TournamentPlayer[]
+  rounds         Round[]
+  teams          Team[]
+  bracketMatches BracketMatch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,8 +145,10 @@ model TournamentPlayer {
 
   registeredAt DateTime @default(now())
 
-  matchesAsPlayer1 Match[] @relation("Player1")
-  matchesAsPlayer2 Match[] @relation("Player2")
+  matchesAsPlayer1        Match[]         @relation("Player1")
+  matchesAsPlayer2        Match[]         @relation("Player2")
+  bracketMatchesAsPlayer1 BracketMatch[]  @relation("BracketPlayer1")
+  bracketMatchesAsPlayer2 BracketMatch[]  @relation("BracketPlayer2")
 
   @@unique([tournamentId, userId])
 }
@@ -209,8 +213,10 @@ model Team {
   tournamentId String
   tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   players      TournamentPlayer[]
-  teamMatches1 TeamMatch[]        @relation("TeamMatch_team1")
-  teamMatches2 TeamMatch[]        @relation("TeamMatch_team2")
+  teamMatches1           TeamMatch[]     @relation("TeamMatch_team1")
+  teamMatches2           TeamMatch[]     @relation("TeamMatch_team2")
+  bracketMatchesAsTeam1  BracketMatch[]  @relation("BracketTeam1")
+  bracketMatchesAsTeam2  BracketMatch[]  @relation("BracketTeam2")
 
   // Stats équipe (calculées après chaque match d'équipe)
   wins   Int @default(0)
@@ -270,4 +276,41 @@ model Notification {
 enum NotificationType {
   NEW_REGISTRATION   // organisateur : nouveau joueur inscrit
   TOURNAMENT_START   // joueur : le tournoi démarre
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOP-CUT / BRACKET D'ÉLIMINATION DIRECTE
+// ─────────────────────────────────────────────────────────────
+
+model BracketMatch {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  // Structure du bracket
+  roundOf   Int // 8 = QF, 4 = SF, 2 = Finale — nombre de participants encore en lice
+  position  Int // 1-based ; ceil(P/2) = position dans le round suivant
+
+  // Mode individuel
+  player1Id String?
+  player1   TournamentPlayer? @relation("BracketPlayer1", fields: [player1Id], references: [id])
+  player2Id String?
+  player2   TournamentPlayer? @relation("BracketPlayer2", fields: [player2Id], references: [id])
+
+  // Mode équipe
+  team1Id String?
+  team1   Team? @relation("BracketTeam1", fields: [team1Id], references: [id])
+  team2Id String?
+  team2   Team? @relation("BracketTeam2", fields: [team2Id], references: [id])
+
+  player1Score Int?
+  player2Score Int?
+  winnerId     String?     // TournamentPlayer.id ou Team.id selon le mode
+
+  status MatchStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tournamentId, roundOf, position])
 }

@@ -210,6 +210,23 @@
     "addPlayerError": "Failed to add player",
     "addPlayerAlready": "This player is already registered"
   },
+  "playerProfile": {
+    "backToRankings": "Rankings",
+    "memberSince": "Member since",
+    "globalRank": "global ranking",
+    "stats": "Overall statistics",
+    "wins": "Wins",
+    "losses": "Losses",
+    "draws": "Draws",
+    "winrate": "Win rate",
+    "totalPoints": "total pts",
+    "tournamentsPlayed": "tournaments played",
+    "favoriteFactions": "Favourite factions",
+    "history": "Tournament history",
+    "noHistory": "No tournaments played yet.",
+    "inProgress": "In progress",
+    "open": "Open"
+  },
   "games": {
     "title": "Games ({count})",
     "subtitle": "Discover all the miniature wargame systems available on WarForge",
